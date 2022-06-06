@@ -1,0 +1,171 @@
+﻿// main.cpp : Defines the entry point for the application.
+//
+
+#include <memory>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <ranges>
+#include <string_view>
+#include <algorithm>
+#include <iomanip>
+#include <fstream>
+#include <exception>
+#include <cstdlib>
+#include <utils/string_utils.h>
+#include <utils/io_utils.h>
+#include <utils/file_utils.h>
+#include <utils/datetime.h>
+#include <utils/string_utils.h>
+#include "item.h"
+
+const std::string items_fname = "items.txt";
+std::ofstream items_fo;
+std::ifstream items_fi;
+
+using items_list_t = std::vector<item>;
+
+void load_items(items_list_t& to)
+{
+	while (!items_fi.eof())
+		items_fi >> to.emplace_back();
+}
+
+void store_item(const item& item)
+{
+	items_fo << item;
+}
+
+bool enter_item(item& to)
+{
+	// Title
+	std::string title;
+	if (!item_info::enter_title(title, std::cin))
+		return false;
+
+	to.title = title;
+
+	std::cin >> to;
+	if (to)
+	{
+		std::cout << "Item info '" << title << "' found: ";
+		to.info().print_nutrition(100.f);
+	}
+	else
+	{
+		to.set_info(std::make_shared<item_info>(title));
+		std::cin >> to.info();
+	}
+}
+
+int main()
+{
+	std::cout << "Nutrition Calculator" << std::endl;
+
+	//items_fo.open(items_fname, std::ios::app | std::ios::binary);
+	//items_fi.open(items_fname, std::ios::binary);
+
+	items_list_t items;
+	//load_items(items);
+
+	auto finish_input = [&] {
+		utils::input::close_input();
+		auto cur_dt = utils::current_datetime("%02i-%02i-%02i-%03li");
+		auto new_fname_input = utils::format_str("input-%s.txt", cur_dt.c_str());
+		auto new_fname_info = utils::format_str("item_info-%s.txt", cur_dt.c_str());
+		utils::move_file("input.txt", new_fname_input);
+		utils::copy_file("item_info.txt", new_fname_info);
+	};
+
+	utils::input::register_command("exit");
+	utils::input::register_command("end", finish_input);
+	utils::input::register_command("new", finish_input);
+	utils::input::register_command("total");
+
+	while (utils::input::last_command != "exit")
+	{
+		while (
+					utils::input::last_command != "end"
+				&&	utils::input::last_command != "exit"
+				&&	utils::input::last_command != "new"
+				&&	utils::input::last_command != "total"	
+		)
+		{
+			item item;
+
+			enter_item(item);
+
+			if (!utils::input::last_getline_valid)
+				continue;
+			item.print_nutrition();
+			items.push_back(item);
+			//store_item(item);
+		}
+
+		// Sort the items
+		std::sort(items.begin(), items.end(), [](auto&& l, auto&& r) {
+			float ln = 0.f, rn = 0.f;
+			for (auto&& n : l.info().nutrition)
+				ln += n;
+			ln *= l.weight;
+			for (auto&& n : r.info().nutrition)
+				rn += n;
+			rn *= r.weight;
+			return ln > rn;
+		});
+
+		std::cout << std::setw(34) << "title |";
+		std::cout << std::setw(10) << "w (g) |";
+		std::cout << std::setw(10) << "p (g) |";
+		std::cout << std::setw(10) << "f (g) |";
+		std::cout << std::setw(10) << "c (g) |";
+		std::cout << std::setw(10) << "fib (g) |";
+		std::cout << std::setw(10) << "cal |";
+		std::cout << "\n";
+
+		item_info total_info;
+		total_info.nutrition.resize(4);
+		float total_weight = 0.f;
+
+		for (auto item : items)
+		{
+			std::cout << std::setw(32) << item.info().title << " |";
+			std::cout << std::setw(8) << item.weight << " |";
+			int i = 0;
+			for (auto n : item.info().nutrition)
+			{
+				float val = n * item.weight / 100.f;
+				std::cout << std::setw(8) << val << " |";
+				total_info.nutrition[i++] += val;
+			}
+			float val = item.info().cal * item.weight / 100.f;
+			std::cout << std::setw(8) << val << " |";
+			total_info.cal += val;
+			total_weight += item.weight;
+			std::cout << "\n";
+		}
+
+		std::cout << std::setw(34) << "Total: |";
+		std::cout << std::setw(8) << total_weight << " |";
+		for (auto n : total_info.nutrition)
+			std::cout << std::setw(8) << n << " |";
+		std::cout << std::setw(8) << total_info.cal << " |";
+		std::cout << "\n";
+
+		if (utils::input::last_command != "total")
+			items.clear();
+
+		if (utils::input::last_command != "exit")
+			utils::input::reset_last_input();
+	}
+	return 0;
+}
+
+// TODO:
+//   * store and load items instead of input
+//   *date in file names
+//   * end <fname>
+//   * from <fname> -load from a file
+//   * edit_info <item_title>
+//   *multiple aliases for items separated with '='
+//   * 'category' command
