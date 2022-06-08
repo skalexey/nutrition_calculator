@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,9 +20,11 @@ using item_info_ptr = std::shared_ptr<item_info>;
 
 struct item_info
 {
+	using aliases_list_t = std::unordered_set<std::string>;
     // Data
 	std::string title;
 	std::vector<float> nutrition;
+	aliases_list_t aliases;
     float cal = 0;
 
     // Initializers

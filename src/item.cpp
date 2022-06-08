@@ -4,6 +4,7 @@
 #include <ranges>
 #include <string_view>
 #include <algorithm>
+#include <iterator>
 #include <iomanip>
 #include <fstream>
 #include <exception>
@@ -21,6 +22,19 @@ namespace
 	std::ofstream fo_item_info;
 
 	// Functions
+	bool parse_aliases(const std::string_view& data, item_info::aliases_list_t& to)
+	{
+		auto aliases = utils::split(data, "=");
+		std::transform(
+			aliases.begin()
+			, aliases.end()
+			, std::inserter(to, to.end())
+			, [&](auto&& v) {
+			return std::string(v);
+		});
+		return true;
+	}
+
 	bool parse_nutrition(const std::string& data, std::vector<float>& nutrition)
 	{
 		std::string_view parts(data);
@@ -137,7 +151,10 @@ item_info_ptr item_info::load(const std::string& item_title)
 			switch (i)
 			{
 				case 0: // Title
-					if (std::string(p) != item_title)
+				{
+					aliases_list_t aliases;
+					parse_aliases(p, aliases);
+					if (aliases.find(item_title) == aliases.end())
 						break;
 					else
 					{
@@ -145,7 +162,7 @@ item_info_ptr item_info::load(const std::string& item_title)
 						ret->title = p;
 					}
 					break;
-
+				}
 				case 1:	// Nutrition
 					if (ret)
 						parse_nutrition(std::string(p), ret->nutrition);
@@ -218,7 +235,7 @@ bool item_info::enter_nutrition(std::istream& is)
 bool item_info::enter_cal(std::istream& is)
 {
 	std::string s;
-	std::cout << "\t" << "Callories: ";
+	std::cout << "\t" << "Calories: ";
 	
 	while (!utils::input::input_t(cal, is, input_fname));
 	
