@@ -1,7 +1,6 @@
 ﻿// item.cpp : Defines the entry point for the application.
 //
 #include <iostream>
-#include <ranges>
 #include <string_view>
 #include <algorithm>
 #include <iterator>
@@ -37,9 +36,8 @@ namespace
 
 	bool parse_nutrition(const std::string& data, std::vector<float>& nutrition)
 	{
-		std::string_view parts(data);
 		constexpr std::string_view delim("/");
-		auto v = std::views::split(parts, delim);
+		auto v = utils::split(data, "/");
 		try
 		{
 			for (auto&& sub : v)
@@ -141,9 +139,7 @@ item_info_ptr item_info::load(const std::string& item_title)
 		getline(fi_item_info, line);
 		if (line.empty())
 			break;
-		std::string_view parts(line);
-		constexpr std::string_view delim("\t");
-		auto v = std::views::split(parts, delim);
+		auto v = utils::split(line, "\t");
 		// TODO: use streams
 		int i = 0;
 		for (auto&& p : v)
