@@ -81,6 +81,10 @@ int main()
 	utils::input::register_command("end", finish_input);
 	utils::input::register_command("new", finish_input);
 	utils::input::register_command("total");
+	utils::input::register_command("remove_last", [&] {
+		items.resize(items.size() - 1);
+		utils::file_remove_last_line_f(*utils::input::get_file());
+	});
 
 	while (utils::input::last_command != "exit")
 	{
