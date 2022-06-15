@@ -155,7 +155,7 @@ item_info_ptr item_info::load(const std::string& item_title)
 					else
 					{
 						ret = std::make_shared<item_info>();
-						ret->title = p;
+						ret->title = *aliases.begin();
 					}
 					break;
 				}
