@@ -166,10 +166,9 @@ int main()
 }
 
 // TODO:
-//   * store and load items instead of input
-//   *date in file names
-//   * end <fname>
-//   * from <fname> -load from a file
-//   * edit_info <item_title>
-//   *multiple aliases for items separated with '='
-//   * 'category' command
+//	* store and load items instead of input
+//	* date in file names
+//	* end <fname>
+//	* from <fname> -load from a file
+//	* edit_info <item_title>
+//	*'category' command
