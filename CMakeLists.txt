@@ -5,7 +5,8 @@ cmake_minimum_required (VERSION 3.8)
 
 project (nutrition_calculator C CXX)
 
-SET(MY_FLAGS "/std:c++latest")
+set(CMAKE_CXX_STANDARD 20)
+
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MY_FLAGS}")
 
 if (LOG_ON)

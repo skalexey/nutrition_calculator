@@ -1,11 +1,10 @@
-﻿// main.cpp : Defines the entry point for the application.
+// main.cpp : Defines the entry point for the application.
 //
 
 #include <memory>
 #include <string>
 #include <vector>
 #include <iostream>
-#include <ranges>
 #include <string_view>
 #include <algorithm>
 #include <iomanip>
