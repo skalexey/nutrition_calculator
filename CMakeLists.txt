@@ -22,14 +22,16 @@ else()
 	message("nutrition_calculator: DEPS: ${DEPS}")
 endif()
 
-set(UTILS_DIR "${DEPS}/Utils/include")
-foreach(items ${UTILS_DIR})
-	file(GLOB_RECURSE UTILS_SRC "${items}/*.cpp")
-endforeach()
+# Include Utils library
+set(UTILS_DIR "${DEPS}/Utils")
+add_subdirectory ("${UTILS_DIR}" "${UTILS_DIR}/Build-cmake")
+
+set(CUSTOM_INCLUDES ${CUSTOM_INCLUDES} ${utils_INCLUDES})
 
 set(nutrition_calculator_INCLUDES
 	"${PROJECT_SOURCE_DIR}/include"
 	"${UTILS_DIR}"
+	"${CUSTOM_INCLUDES}"
 )
 
 if (NOT "${INCLUDES}" STREQUAL "")
@@ -54,5 +56,6 @@ message("'nutrition_calculator' project SRC: ${SRC}")
 message("'nutrition_calculator' project HEADERS: ${HEADERS}")
 
 add_executable (nutrition_calculator ${HEADERS} ${SRC})
+target_link_libraries(nutrition_calculator utils)
 
 set_target_properties(nutrition_calculator PROPERTIES LINKER_LANGUAGE CXX)
