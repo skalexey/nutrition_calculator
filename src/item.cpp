@@ -73,12 +73,9 @@ std::istream& operator >> (std::istream& is, item& obj)
 		if (!item_info::enter_title(obj.title, is))
 			return is;
 
-	if (auto info = item_info::load(obj.title))
-	{
-		//std::cout << "Item info '" << title << "' found: ";
-		//info->print_nutrition(100.f);
-		obj.set_info(info);
-	}
+	if (!obj)
+		if (auto info = item_info::load(obj.title))
+			obj.set_info(info);
 
 	// Weight
 	std::cout << "\t" << "grams: ";

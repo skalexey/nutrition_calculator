@@ -43,12 +43,13 @@ bool enter_item(item& to)
 		return false;
 
 	to.title = title;
-
-	std::cin >> to;
-	if (to)
+	
+	if (auto info = item_info::load(title))
 	{
+		to.set_info(info);
 		std::cout << "Item info '" << title << "' found: ";
 		to.info().print_nutrition(100.f);
+		std::cin >> to;
 	}
 	else
 	{
