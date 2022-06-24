@@ -8,6 +8,7 @@
 #include <fstream>
 #include <exception>
 #include <cstdlib>
+#include <filesystem>
 #include <utils/io_utils.h>
 #include <utils/string_utils.h>
 #include "item.h"
@@ -15,8 +16,8 @@
 namespace
 {
 	// Data
-	const std::string item_info_fname = "item_info.txt";
-	const std::string input_fname = "input.txt";
+	const std::string item_info_fname = std::filesystem::temp_directory_path().append("item_info.txt").string();
+	const std::string input_fname = std::filesystem::temp_directory_path().append("input.txt").string();
 	std::ifstream fi_item_info;
 	std::ofstream fo_item_info;
 

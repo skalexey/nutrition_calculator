@@ -11,14 +11,19 @@
 #include <fstream>
 #include <exception>
 #include <cstdlib>
+#include <filesystem>
 #include <utils/string_utils.h>
 #include <utils/io_utils.h>
 #include <utils/file_utils.h>
 #include <utils/datetime.h>
 #include <utils/string_utils.h>
+#include <utils/Log.h>
 #include "item.h"
 
-const std::string items_fname = "items.txt";
+LOG_POSTFIX("\n");
+
+const std::string items_fname = std::filesystem::temp_directory_path().append("item_info.txt").string();
+const std::string input_fname = std::filesystem::temp_directory_path().append("input.txt").string();
 std::ofstream items_fo;
 std::ifstream items_fi;
 
@@ -73,8 +78,8 @@ int main()
 		auto cur_dt = utils::current_datetime("%02i-%02i-%02i-%03li");
 		auto new_fname_input = utils::format_str("input-%s.txt", cur_dt.c_str());
 		auto new_fname_info = utils::format_str("item_info-%s.txt", cur_dt.c_str());
-		utils::move_file("input.txt", new_fname_input);
-		utils::copy_file("item_info.txt", new_fname_info);
+		utils::move_file(input_fname, new_fname_input);
+		utils::copy_file(items_fname, new_fname_info);
 	};
 
 	utils::input::register_command("exit");
@@ -84,6 +89,9 @@ int main()
 	utils::input::register_command("remove_last", [&] {
 		items.resize(items.size() - 1);
 		utils::file_remove_last_line_f(*utils::input::get_file());
+	});
+	utils::input::register_command("temp_dir", [] {
+		LOG(std::filesystem::temp_directory_path());
 	});
 
 	while (utils::input::last_command != "exit")
