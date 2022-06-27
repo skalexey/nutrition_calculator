@@ -22,8 +22,8 @@
 
 LOG_POSTFIX("\n");
 
-const std::string items_fname = std::filesystem::temp_directory_path().append("item_info.txt").string();
-const std::string input_fname = std::filesystem::temp_directory_path().append("input.txt").string();
+const std::filesystem::path items_fname = std::filesystem::temp_directory_path().append("item_info.txt").string();
+const std::filesystem::path input_fname = std::filesystem::temp_directory_path().append("input.txt").string();
 std::ofstream items_fo;
 std::ifstream items_fi;
 
@@ -76,10 +76,10 @@ int main()
 	auto finish_input = [&] {
 		utils::input::close_input();
 		auto cur_dt = utils::current_datetime("%02i-%02i-%02i-%03li");
-		auto new_fname_input = utils::format_str("input-%s.txt", cur_dt.c_str());
-		auto new_fname_info = utils::format_str("item_info-%s.txt", cur_dt.c_str());
-		utils::move_file(input_fname, new_fname_input);
-		utils::copy_file(items_fname, new_fname_info);
+		auto new_fname_input = std::filesystem::path(input_fname.parent_path() / std::filesystem::path(utils::format_str("input-%s.txt", cur_dt.c_str())));
+		auto new_fname_info = std::filesystem::path(items_fname.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
+		utils::move_file(input_fname.string(), new_fname_input.string());
+		utils::copy_file(items_fname.string(), new_fname_info.string());
 	};
 
 	utils::input::register_command("exit");
