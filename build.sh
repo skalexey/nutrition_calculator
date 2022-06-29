@@ -42,7 +42,7 @@ build()
 	local build=""
 	local rootDirectory="."
 	local onlyConfig=false
-
+	local reconfigure=false
 
 	local argIndex=0
 	for arg in "$@" 
@@ -67,9 +67,13 @@ build()
 			elif [[ "$arg" == "release" ]]; then
 				log "'release' option passed. Set Release build type" " --"
 				local buildConfig="Release"
-			elif [[ "$arg" == "configure" ]]; then
-				log "'configure' option passed. Will not build the project. Only make the config" " --"
+			elif [[ "$arg" == "configure" ]] || [[ "$arg" == "-c" ]]; then
+				log "'$arg' option passed. Will not build the project. Only make the config" " --"
 				local onlyConfig=true
+			elif [[ "$arg" == "reconfigure" ]] || [[ "$arg" == "-rc" ]]; then
+				log "'$arg' option passed. Will not build the project. Only make the config and remove CMakeCache.txt" " --"
+				local onlyConfig=true
+				local reconfigure=true
 			fi
 		fi	
 		local argIndex=$((argIndex + 1))
@@ -91,7 +95,7 @@ build()
 		fi
 	fi
 
-	[ ! -d "$rootDirectory" ] && log "Non-existent project directory passed '$rootDirectory'" " -" && exit 1 || cd "$rootDirectory"
+	[ ! -d "$rootDirectory" ] && log_error "Non-existent project directory passed '$rootDirectory'" " -" && exit 1 || cd "$rootDirectory"
 
 	if [[ "$rootDirectory" != "." ]]; then
 		local folderName=$rootDirectory
@@ -104,8 +108,14 @@ build()
 	[ ! -d "$build" ] && mkdir $build || log "	already exists"
 	cd $build
 
-	log "Configure with CMake: cmake ..$generatorArg$logArg$extraArg" "\033[0;36m" "\033[0m"
-	cmake ..$generatorArg$logArg$extraArg
+	if $reconfigure; then
+		local cmd="rm CMakeCache.txt"
+		log "Remove CMakeCache.txt cmd: '$cmd'"
+		$cmd
+	fi
+	cmd="cmake ..$generatorArg$logArg$extraArg"
+	log "Configure with CMake command: '$cmd'" "\033[0;36m" "\033[0m"
+	$cmd
 
 	local retval=$?
 	if [ $retval -ne 0 ]; then
