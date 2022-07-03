@@ -32,21 +32,23 @@ function sync_file()
 	# 	local f2=$this_f
 	# fi
 	
+	local ret=false
 	source input.sh
 	if ask_user "Push local file? If you answer No - the remote version will replace the local one"; then
 		cp "$this_f" "$remote_f"
 		local r=$?
 		[ $? -eq 0 ] && log_info "cp '$this_f' '$remote_f'" || log_error "Error while copying '$this_f' to '$remote_f'"
-		$automation_dir/git/commit.sh "$tmp_dir"
+		local ret=true
 	else
 		$automation_dir/git/pull.sh "$tmp_dir"
 		cp "$remote_f" "$this_f"
 		[ $? -eq 0 ] && log_info "cp '$remote_f' '$this_f'" || log_error "Error while copying '$remote_f' to '$this_f'"
+		local ret=false
 	fi
 
 	[ $? -ne 0 ] && log_error "Errors while syncing file '$fname'" && return 3 || log_success "Synced"
 
-	return 0
+	$ret
 }
 
 function sync_resources()
@@ -66,7 +68,17 @@ function sync_resources()
 
 	#$automation_dir/git/pull.sh "$tmp_dir"
 
-	sync_file "item_info.txt" "$tmp_dir"
+	local commit=false
+	if sync_file "item_info.txt" "$tmp_dir"; then
+		commit=true
+	fi
+	if sync_file "input.txt" "$tmp_dir"; then
+		commit=true
+	fi
+	if $commit; then
+		$automation_dir/git/commit.sh "$tmp_dir"
+	fi
+
 	[ $? -ne 0 ] && log_error "Error while delivering resources" || log_success "Done"
 }
 
