@@ -53,6 +53,9 @@ function sync_file()
 
 function sync_resources()
 {
+	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	cd "$THIS_DIR"
+
 	local scripts_dir="${HOME}/Scripts"
 	source "$scripts_dir/automation/automation_config.sh"
 	source "$automation_dir/tmp_repo/tmp_config.sh"
@@ -60,7 +63,6 @@ function sync_resources()
 	local log_prefix="[sync_resources]: "
 	local tmp_dir="$project_dir"
 	
-	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	# local cur_dir="${PWD}"
 	# cd "$THIS_DIR"
 	
