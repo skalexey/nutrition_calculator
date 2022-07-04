@@ -76,7 +76,7 @@ function sync_resources()
 		commit=true
 	fi
 	if $commit; then
-		$automation_dir/git/commit.sh "$tmp_dir"
+		$automation_dir/git/commit.sh "$tmp_dir" "Sync resources"
 	fi
 
 	[ $? -ne 0 ] && log_error "Error while delivering resources" || log_success "Done"
