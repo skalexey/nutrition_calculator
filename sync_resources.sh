@@ -55,7 +55,7 @@ function sync_resources()
 {
 	local scripts_dir="${HOME}/Scripts"
 	source "$scripts_dir/automation/automation_config.sh"
-	source "$automation_dir/tmp/tmp_config.sh"
+	source "$automation_dir/tmp_repo/tmp_config.sh"
 	source log.sh
 	local log_prefix="[sync_resources]: "
 	local tmp_dir="$project_dir"
