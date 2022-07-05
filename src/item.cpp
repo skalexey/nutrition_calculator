@@ -216,7 +216,7 @@ bool item_info::enter_nutrition(std::istream& is)
 		else
 			std::cout << "\t" << "Wrong format\np/f/c/fib: ";
 		do {
-			if (!utils::input::input_line(pfcfib, is, input_fname))
+			if (!utils::input::input_line(pfcfib, is))
 				return false;
 			auto it = std::remove_if(pfcfib.begin(), pfcfib.end(), isspace);
 			if (it != pfcfib.end())
@@ -236,7 +236,7 @@ bool item_info::enter_cal(std::istream& is)
 	std::string s;
 	std::cout << "\t" << "Calories: ";
 	
-	while (!utils::input::input_t(cal, is, input_fname));
+	while (!utils::input::input_t(cal, is));
 	
 	fo_item_info << cal;
 	fo_item_info.flush();
