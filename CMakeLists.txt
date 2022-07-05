@@ -28,10 +28,26 @@ add_subdirectory ("${UTILS_DIR}" "${UTILS_DIR}/Build-cmake")
 
 set(CUSTOM_INCLUDES ${CUSTOM_INCLUDES} ${utils_INCLUDES})
 
+# Networking dependency
+if ("${NETLIB_DIR}" STREQUAL "")
+	set(NETLIB_DIR "${DEPS}/Networking/netlib")
+else()
+	message("NETLIB_DIR: ${NETLIB_DIR}")
+endif()
+
+if (CMAKE_CXX_COMPILER EQUAL "g++")
+	set(BUILD_DIR_NAME "Build-g++")
+else ()
+	set(BUILD_DIR_NAME "Build-cmake")
+endif ()
+
+add_subdirectory("${NETLIB_DIR}" "${NETLIB_DIR}/${BUILD_DIR_NAME}")
+
 set(nutrition_calculator_INCLUDES
 	"${PROJECT_SOURCE_DIR}/include"
 	"${UTILS_DIR}"
 	"${CUSTOM_INCLUDES}"
+	"${NETLIB_INCLUDES}"
 )
 
 if (NOT "${INCLUDES}" STREQUAL "")
@@ -57,5 +73,13 @@ message("'nutrition_calculator' project HEADERS: ${HEADERS}")
 
 add_executable (nutrition_calculator ${HEADERS} ${SRC})
 target_link_libraries(nutrition_calculator utils)
+
+target_link_libraries (nutrition_calculator netlib)
+
+# add_custom_command(
+#     TARGET nutrition_calculator PRE_BUILD
+#     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/../get_dependencies.sh ${CMAKE_BUILD_TYPE} "${CMAKE_CURRENT_SOURCE_DIR}/.."
+#     VERBATIM
+# )
 
 set_target_properties(nutrition_calculator PROPERTIES LINKER_LANGUAGE CXX)

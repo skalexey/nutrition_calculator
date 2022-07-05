@@ -18,6 +18,7 @@
 #include <utils/datetime.h>
 #include <utils/string_utils.h>
 #include <utils/Log.h>
+#include <tcp/client.h>
 #include "item.h"
 
 LOG_POSTFIX("\n");
@@ -63,6 +64,9 @@ bool enter_item(item& to)
 int main()
 {
 	std::cout << "Nutrition Calculator" << std::endl;
+
+	anp::tcp::client c;
+
 
 	//items_fo.open(items_fname, std::ios::app | std::ios::binary);
 	//items_fi.open(items_fname, std::ios::binary);
