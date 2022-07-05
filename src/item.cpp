@@ -77,6 +77,11 @@ std::istream& operator >> (std::istream& is, item& obj)
 	if (!obj)
 		if (auto info = item_info::load(obj.title))
 			obj.set_info(info);
+		else
+		{
+			obj.set_info(std::make_shared<item_info>(obj.title));
+			is >> obj.info();
+		}
 
 	// Weight
 	std::cout << "\t" << "grams: ";

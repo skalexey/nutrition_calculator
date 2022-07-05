@@ -54,13 +54,8 @@ bool enter_item(item& to)
 		to.set_info(info);
 		std::cout << "Item info '" << title << "' found: ";
 		to.info().print_nutrition(100.f);
-		std::cin >> to;
 	}
-	else
-	{
-		to.set_info(std::make_shared<item_info>(title));
-		std::cin >> to.info();
-	}
+	std::cin >> to;
 }
 
 int main()
