@@ -56,6 +56,8 @@ bool enter_item(item& to)
 		to.info().print_nutrition(100.f);
 	}
 	std::cin >> to;
+
+	return true;
 }
 
 int main()
@@ -75,6 +77,8 @@ int main()
 		auto new_fname_info = std::filesystem::path(items_fname.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
 		utils::move_file(input_fname.string(), new_fname_input.string());
 		utils::copy_file(items_fname.string(), new_fname_info.string());
+		// Exit from the input loop
+		return false;
 	};
 
 	utils::input::register_command("exit");
@@ -84,9 +88,11 @@ int main()
 	utils::input::register_command("remove_last", [&] {
 		items.resize(items.size() - 1);
 		utils::file_remove_last_line_f(*utils::input::get_file());
+		return true;
 	});
 	utils::input::register_command("temp_dir", [] {
 		LOG(std::filesystem::temp_directory_path());
+		return true;
 	});
 
 	while (utils::input::last_command != "exit")
