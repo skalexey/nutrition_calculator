@@ -7,23 +7,16 @@ function update_scripts()
 
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	cd "$THIS_DIR"
+
 	cp "$automation_dir/automation_config.sh" .
 	cp "$scripts_dir/include/log.sh" .
-	cp "$scripts_dir/include/os.sh" .
-	cp "$scripts_dir/include/input.sh" .
-	cp "$scripts_dir/include/file_utils.sh" .
+	cp "$scripts_dir/include/ssh.sh" .
+	local r=$?
 
 	source log.sh
 	local log_prefix="[update_scripts]: "
 	
-	[ $? -ne 0 ] && log_error "Error while delivering files" && return 1
-
-	$automation_dir/run.sh \
-		"$automation_dir/build_sh/deliver_build_scripts_job.sh" \
-			"$THIS_DIR" \
-			"no-config"
-
-	[ $? -ne 0 ] && log_error "Error while delivering files" && return 2
+	[ $r -ne 0 ] && log_error "Error while delivering files" && return 1
 
 	log_success "Done"
 }
