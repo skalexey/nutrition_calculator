@@ -55,7 +55,7 @@ function ssh_rename()
 
 	local containing_dir=$(dirname $path)
 	echo "Containing dir of '$path': '$containing_dir'"
-	 $shh_pass ssh $user@$host mv "$path" "$containing_dir/$new_name"
+	$shh_pass ssh $user@$host mv "$path" "$containing_dir/$new_name"
 }
 
 
