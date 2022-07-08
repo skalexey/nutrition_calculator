@@ -12,6 +12,8 @@
 #include <exception>
 #include <cstdlib>
 #include <filesystem>
+#include <mutex>
+#include <condition_variable>
 #include <utils/string_utils.h>
 #include <utils/io_utils.h>
 #include <utils/file_utils.h>
@@ -23,10 +25,12 @@
 
 LOG_POSTFIX("\n");
 
-const std::filesystem::path items_fname = std::filesystem::temp_directory_path().append("item_info.txt").string();
-const std::filesystem::path input_fname = std::filesystem::temp_directory_path().append("input.txt").string();
+const std::filesystem::path items_fpath = std::filesystem::temp_directory_path().append("item_info.txt").string();
+const std::filesystem::path input_fpath = std::filesystem::temp_directory_path().append("input.txt").string();
 std::ofstream items_fo;
 std::ifstream items_fi;
+
+int content_length = -1;
 
 using items_list_t = std::vector<item>;
 
@@ -39,6 +43,11 @@ void load_items(items_list_t& to)
 void store_item(const item& item)
 {
 	items_fo << item;
+}
+
+void send_file()
+{
+
 }
 
 bool enter_item(item& to)
@@ -61,13 +70,100 @@ bool enter_item(item& to)
 	return true;
 }
 
+int job();
+
 int main()
 {
 	std::cout << "Nutrition Calculator" << std::endl;
 
+	std::mutex cv_mtx;
+	std::unique_lock<std::mutex> cv_ul(cv_mtx);
+	std::condition_variable cv;
+
 	anp::tcp::client c;
+	//backup_local_file();
 
+	std::ofstream f(items_fpath, std::ios::trunc | std::ios::binary);
+	f.close();
 
+	c.set_on_connect([&](const std::error_code& ec) {
+		if (!ec)
+		{
+			LOG("Send...");
+			c.send(
+				"GET /nc/s.php HTTP/1.1\r\n"
+				"Accept: text/html, application/xhtml + xml, application/xml; q = 0.9, image/avif, image/webp, image/apng, */*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n"
+				"Accept-Encoding: gzip, deflate\r\n"
+				"Accept-Language: en-US,en;q=0.9,ru;q=0.8,ru-RU;q=0.7\r\n"
+				"Connection: keep-alive\r\n"
+				"Host: skalexey.ru\r\n"
+				"Upgrade-Insecure-Requests: 1\r\n"
+				"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36\r\n"
+				"\r\n"
+			);
+		}
+		else
+		{
+			LOG_ERROR("Error during connection.");
+		}
+	});
+
+	if (c.connect("skalexey.ru", 80))
+	{
+		LOG("Set on_receive task");
+		c.set_on_receive([&](const std::vector<char>& buf, std::size_t sz, int) {
+			LOG("\nReceived " << sz << " bytes:");
+			std::string s(buf.begin(), buf.begin() + sz);
+			LOG(s);
+
+			if (content_length > 0)
+			{
+				std::ofstream f(items_fpath, std::ios::app | std::ios::binary);
+				f.write(buf.data(), sz);
+				f.close();
+				content_length -= sz;
+				assert(content_length >= 0);
+				cv.notify_one();
+			}
+			else
+			{
+				std::string what = "Content-Length: ";
+				auto res = s.find(what);
+				if (res != std::string::npos)
+				{
+					auto res2 = s.find("\r", res);
+					if (res2 != std::string::npos)
+					{
+						auto sc = s.substr(res + what.size(), res2 - res - what.size());
+						try
+						{
+							content_length = std::atoi(sc.c_str());
+						}
+						catch (...)
+						{
+							LOG_ERROR("Cant parse content length '" << sc << "'");
+						}
+						LOG("Content length: " << sc);
+					}
+				}
+			}
+		});
+	}
+	else
+	{
+		return -1;
+	}
+
+	LOG("Wait resources loading...");
+	cv.wait(cv_ul);
+	LOG("Resources loaded.");
+	c.disconnect();
+	LOG("Launch the main process.");
+	job();
+}
+
+int job()
+{
 	//items_fo.open(items_fname, std::ios::app | std::ios::binary);
 	//items_fi.open(items_fname, std::ios::binary);
 
@@ -77,10 +173,10 @@ int main()
 	auto finish_input = [&] {
 		utils::input::close_input();
 		auto cur_dt = utils::current_datetime("%02i-%02i-%02i-%03li");
-		auto new_fname_input = std::filesystem::path(input_fname.parent_path() / std::filesystem::path(utils::format_str("input-%s.txt", cur_dt.c_str())));
-		auto new_fname_info = std::filesystem::path(items_fname.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
-		utils::move_file(input_fname.string(), new_fname_input.string());
-		utils::copy_file(items_fname.string(), new_fname_info.string());
+		auto new_fname_input = std::filesystem::path(input_fpath.parent_path() / std::filesystem::path(utils::format_str("input-%s.txt", cur_dt.c_str())));
+		auto new_fname_info = std::filesystem::path(items_fpath.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
+		utils::move_file(input_fpath.string(), new_fname_input.string());
+		utils::copy_file(items_fpath.string(), new_fname_info.string());
 		// Exit from the input loop
 		return false;
 	};
