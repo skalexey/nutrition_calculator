@@ -5,19 +5,39 @@ cmake_minimum_required (VERSION 3.8)
 
 project (nutrition_calculator C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MY_FLAGS}")
+if(MSVC)
+	# fix __cplusplus macro for MSVC
+	add_compile_options(
+		"/Zc:__cplusplus"
+		"/std:c++latest"
+	)
+else()
+	set(CMAKE_CXX_STANDARD 20)
+endif()
 
 if (LOG_ON)
 	add_compile_definitions("LOG_ON")
+	message("nutrition_calculator: LOG_ON is defined")
+else()
+	message("nutrition_calculator: LOG_ON is not defined")
 endif ()
-
+if (LOG_LEVEL_VERBOSE)
+	add_compile_definitions("LOG_LEVEL_VERBOSE")
+	message("nutrition_calculator: LOG_LEVEL_VERBOSE is defined")
+else()
+	message("nutrition_calculator: LOG_LEVEL_VERBOSE is not defined")
+endif ()
+if (LOG_LEVEL_DEBUG)
+	add_compile_definitions("LOG_LEVEL_DEBUG")
+	message("nutrition_calculator: LOG_LEVEL_DEBUG is defined")
+else()
+	message("nutrition_calculator: LOG_LEVEL_DEBUG is not defined")
+endif()
 #include_directories(".")
 
 if ("${DEPS}" STREQUAL "")
 	message("nutrition_calculator: WARNING: DEPS is not specified. Take the default value")
-	set(DEPS "${PROJECT_SOURCE_DIR}/dependencies")
+	set(DEPS "$ENV{nutrition_calculator_deps}")
 else()
 	message("nutrition_calculator: DEPS: ${DEPS}")
 endif()
@@ -45,7 +65,6 @@ add_subdirectory("${NETLIB_DIR}" "${NETLIB_DIR}/${BUILD_DIR_NAME}")
 
 set(nutrition_calculator_INCLUDES
 	"${PROJECT_SOURCE_DIR}/include"
-	"${UTILS_DIR}"
 	"${CUSTOM_INCLUDES}"
 	"${NETLIB_INCLUDES}"
 )
