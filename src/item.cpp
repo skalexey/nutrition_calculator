@@ -79,8 +79,13 @@ std::istream& operator >> (std::istream& is, item& obj)
 			obj.set_info(info);
 		else
 		{
-			obj.set_info(std::make_shared<item_info>(obj.title));
-			is >> obj.info();
+			if (utils::input::ask_user("Info of item '" + obj.title + "' not found. Would you like to create it?"))
+			{
+				obj.set_info(std::make_shared<item_info>(obj.title));
+				is >> obj.info();
+			}
+			else
+				return is;
 		}
 
 	// Weight

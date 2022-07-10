@@ -1,8 +1,10 @@
 // main.cpp : Defines the entry point for the application.
 //
 
+#include <csignal>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <iostream>
 #include <string_view>
@@ -12,25 +14,24 @@
 #include <exception>
 #include <cstdlib>
 #include <filesystem>
-#include <mutex>
-#include <condition_variable>
 #include <utils/string_utils.h>
 #include <utils/io_utils.h>
 #include <utils/file_utils.h>
 #include <utils/datetime.h>
 #include <utils/string_utils.h>
 #include <utils/Log.h>
-#include <tcp/client.h>
+#include "downloader.h"
+#include "uploader.h"
 #include "item.h"
 
 LOG_POSTFIX("\n");
+
+namespace fs = std::filesystem;
 
 const std::filesystem::path items_fpath = std::filesystem::temp_directory_path().append("item_info.txt").string();
 const std::filesystem::path input_fpath = std::filesystem::temp_directory_path().append("input.txt").string();
 std::ofstream items_fo;
 std::ifstream items_fi;
-
-int content_length = -1;
 
 using items_list_t = std::vector<item>;
 
@@ -67,99 +68,7 @@ bool enter_item(item& to)
 	}
 	std::cin >> to;
 
-	return true;
-}
-
-int job();
-
-int main()
-{
-	std::cout << "Nutrition Calculator" << std::endl;
-
-	std::mutex cv_mtx;
-	std::unique_lock<std::mutex> cv_ul(cv_mtx);
-	std::condition_variable cv;
-
-	anp::tcp::client c;
-	//backup_local_file();
-
-	std::ofstream f(items_fpath, std::ios::trunc | std::ios::binary);
-	f.close();
-
-	c.set_on_connect([&](const std::error_code& ec) {
-		if (!ec)
-		{
-			LOG("Send...");
-			c.send(
-				"GET /nc/s.php HTTP/1.1\r\n"
-				"Accept: text/html, application/xhtml + xml, application/xml; q = 0.9, image/avif, image/webp, image/apng, */*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n"
-				"Accept-Encoding: gzip, deflate\r\n"
-				"Accept-Language: en-US,en;q=0.9,ru;q=0.8,ru-RU;q=0.7\r\n"
-				"Connection: keep-alive\r\n"
-				"Host: skalexey.ru\r\n"
-				"Upgrade-Insecure-Requests: 1\r\n"
-				"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36\r\n"
-				"\r\n"
-			);
-		}
-		else
-		{
-			LOG_ERROR("Error during connection.");
-		}
-	});
-
-	if (c.connect("skalexey.ru", 80))
-	{
-		LOG("Set on_receive task");
-		c.set_on_receive([&](const std::vector<char>& buf, std::size_t sz, int) {
-			LOG("\nReceived " << sz << " bytes:");
-			std::string s(buf.begin(), buf.begin() + sz);
-			LOG(s);
-
-			if (content_length > 0)
-			{
-				std::ofstream f(items_fpath, std::ios::app | std::ios::binary);
-				f.write(buf.data(), sz);
-				f.close();
-				content_length -= sz;
-				assert(content_length >= 0);
-				cv.notify_one();
-			}
-			else
-			{
-				std::string what = "Content-Length: ";
-				auto res = s.find(what);
-				if (res != std::string::npos)
-				{
-					auto res2 = s.find("\r", res);
-					if (res2 != std::string::npos)
-					{
-						auto sc = s.substr(res + what.size(), res2 - res - what.size());
-						try
-						{
-							content_length = std::atoi(sc.c_str());
-						}
-						catch (...)
-						{
-							LOG_ERROR("Cant parse content length '" << sc << "'");
-						}
-						LOG("Content length: " << sc);
-					}
-				}
-			}
-		});
-	}
-	else
-	{
-		return -1;
-	}
-
-	LOG("Wait resources loading...");
-	cv.wait(cv_ul);
-	LOG("Resources loaded.");
-	c.disconnect();
-	LOG("Launch the main process.");
-	job();
+	return to;
 }
 
 int job()
@@ -189,24 +98,25 @@ int job()
 		items.resize(items.size() - 1);
 		utils::file_remove_last_line_f(*utils::input::get_file());
 		return true;
-	});
+		});
 	utils::input::register_command("temp_dir", [] {
 		LOG(std::filesystem::temp_directory_path());
 		return true;
-	});
+		});
 
 	while (utils::input::last_command != "exit")
 	{
 		while (
-					utils::input::last_command != "end"
-				&&	utils::input::last_command != "exit"
-				&&	utils::input::last_command != "new"
-				&&	utils::input::last_command != "total"	
-		)
+			utils::input::last_command != "end"
+			&& utils::input::last_command != "exit"
+			&& utils::input::last_command != "new"
+			&& utils::input::last_command != "total"
+			)
 		{
 			item item;
 
-			enter_item(item);
+			if (!enter_item(item))
+				continue;
 
 			if (!utils::input::last_getline_valid)
 				continue;
@@ -225,7 +135,7 @@ int job()
 				rn += n;
 			rn *= r.weight;
 			return ln > rn;
-		});
+			});
 
 		std::cout << std::setw(34) << "title |";
 		std::cout << std::setw(10) << "w (g) |";
@@ -273,6 +183,77 @@ int job()
 	}
 	return 0;
 }
+
+bool upload_file(const fs::path& local_path)
+{
+	using namespace anp;
+	uploader u;
+	if (u.upload_file("skalexey.ru", 80, local_path, "/nc/h.php") == http_client::erc::no_error)
+		LOG("Uploaded '" << local_path << "'");
+	else
+	{
+		LOG_ERROR("Error while uploading '" << local_path << "'");
+		return false;
+	}
+}
+
+void upload_resources()
+{
+	upload_file(items_fpath);
+	upload_file(input_fpath);
+}
+
+struct terminator
+{
+	~terminator() {
+		LOG_DEBUG("~terminator()");
+		upload_resources();
+	}
+};
+
+int main()
+{
+	using namespace anp;
+
+	std::signal(SIGINT, [] (int sig) {
+		LOG_DEBUG("SIGINT raised");
+		upload_resources();
+	});
+
+	// Auto uploader on program finish
+	std::unique_ptr<terminator> terminator_inst = std::make_unique<terminator>();
+
+	std::cout << "Nutrition Calculator\n";
+
+	downloader d;
+	auto download = [&](const std::string& remote_path, const fs::path& local_path) -> bool {
+		if (d.download_file("skalexey.ru", 80, utils::format_str("/nc/s.php?p=%s", remote_path.c_str()), local_path) != http_client::erc::no_error)
+		{
+			if (d.errcode() == downloader::erc::uncommitted_changes)
+			{
+				std::stringstream ss;
+				ss << "You have changes in '" << local_path << "'.\nWould you like to upload your file to the remote?";
+				if (utils::input::ask_user(
+					ss.str()))
+				{
+					if (!upload_file(local_path))
+						return false;
+				}
+				return true;
+			}
+			LOG_ERROR("Error while downloading resource '" << remote_path << "'" << " to '" << local_path << "'");
+			return false;
+		}
+		return true;
+	};
+	
+	if (!download("item_info.txt", items_fpath))
+		return 1;
+	if (!download("input.txt", input_fpath))
+		return 2;
+	job();
+}
+	
 
 // TODO:
 //	* store and load items instead of input
