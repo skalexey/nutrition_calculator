@@ -9,15 +9,24 @@ build()
 
 	log "Build for OS: $OSTYPE" " -" " ---"
 
-	local extraArg=" "
-	local extraArgWin=$extraArg
-	local extraArgMac=$extraArg
-
 	if [ -f "deps_config.sh" ]; then
 		source deps_config.sh
 	fi
 
-	source build_config.sh
+	local buildFolderPrefix="Build"
+	local onlyLibArg=" "
+	local cmakeTestsArg=" "
+	local cmakeGppArg=" "
+	local buildConfig="Debug"
+	local logArg=" -DLOG_ON=ON"
+	local build=""
+	local rootDirectory="."
+	local onlyConfig=false
+	local reconfigure=false
+	local extraArg=" "
+	local extraArgWin=$extraArg
+	local extraArgMac=$extraArg
+	
 	source os.sh
 
 	if is_windows; then
@@ -33,18 +42,9 @@ build()
 	[ ! -z "$extraArg" ] && log "Extra arguments: '$extraArg'" " -"
 
 	# process arguments
-	local buildFolderPrefix="Build"
-	local onlyLibArg=" "
-	local cmakeTestsArg=" "
-	local cmakeGppArg=" "
-	local buildConfig="Debug"
-	local logArg=" -DLOG_ON=ON"
-	local build=""
-	local rootDirectory="."
-	local onlyConfig=false
-	local reconfigure=false
-
 	local argIndex=0
+	local custom_config=false
+
 	for arg in "$@" 
 	do
 		echo "arg[$argIndex]: '$arg'"
@@ -67,6 +67,13 @@ build()
 			elif [[ "$arg" == "release" ]]; then
 				log "'release' option passed. Set Release build type" " --"
 				local buildConfig="Release"
+				local custom_config=true
+				if [ -f "build_config_release.sh" ]; then
+					log "Load build_config_release.sh"
+					source build_config_release.sh
+				else
+					log "build_config_release.sh was not found. You can create it and override settings for release build"
+				fi
 			elif [[ "$arg" == "configure" ]] || [[ "$arg" == "-c" ]]; then
 				log "'$arg' option passed. Will not build the project. Only make the config" " --"
 				local onlyConfig=true
@@ -79,6 +86,10 @@ build()
 		local argIndex=$((argIndex + 1))
 	done
 
+	if ! $custom_config; then
+		log "Load build_config.sh"
+		source build_config.sh
+	fi
 
 	# check for dependencies
 	local enterDirectory=${pwd}
