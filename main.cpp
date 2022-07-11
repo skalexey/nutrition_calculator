@@ -204,6 +204,7 @@ int sync_resources()
 
 	downloader d;
 	auto download = [&](const std::string& remote_path, const fs::path& local_path) -> bool {
+		LOG("Download remote version of resource '" << local_path.filename() << "'...");
 		if (d.download_file("skalexey.ru", 80, utils::format_str("/nc/s.php?p=%s", remote_path.c_str()), local_path) != http_client::erc::no_error)
 		{
 			if (d.errcode() == downloader::erc::uncommitted_changes)
