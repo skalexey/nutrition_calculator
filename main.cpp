@@ -198,33 +198,9 @@ bool upload_file(const fs::path& local_path)
 	return false;
 }
 
-void upload_resources()
-{
-	upload_file(items_fpath);
-	upload_file(input_fpath);
-}
-
-struct terminator
-{
-	~terminator() {
-		LOG_DEBUG("~terminator()");
-		upload_resources();
-	}
-};
-
-int main()
+int sync_resources()
 {
 	using namespace anp;
-
-	std::signal(SIGINT, [] (int sig) {
-		LOG_DEBUG("SIGINT raised");
-		upload_resources();
-	});
-
-	// Auto uploader on program finish
-	std::unique_ptr<terminator> terminator_inst = std::make_unique<terminator>();
-
-	std::cout << "Nutrition Calculator\n";
 
 	downloader d;
 	auto download = [&](const std::string& remote_path, const fs::path& local_path) -> bool {
@@ -234,26 +210,68 @@ int main()
 			{
 				std::stringstream ss;
 				ss << "You have changes in '" << local_path << "'.\nWould you like to upload your file to the remote?";
-				if (utils::input::ask_user(
-					ss.str()))
+				try
 				{
-					if (!upload_file(local_path))
-						return false;
+					if (utils::input::ask_user(
+						ss.str()))
+					{
+						if (!upload_file(local_path))
+							return false;
+					}
+				}
+				catch (std::string s)
+				{
+					LOG("Emergency exit (" << s << ")");
+					return false;
 				}
 				return true;
 			}
 			LOG_ERROR("Error while downloading resource '" << remote_path << "'" << " to '" << local_path << "'");
 			return false;
 		}
-		LOG("Resource updated from the remote: '" << local_path << "'");
+		if (d.is_file_updated())
+			LOG("Resource updated from the remote: '" << local_path << "'");
+		else
+			LOG("Local resource is up to date: '" << local_path << "'");
 		return true;
 	};
-	
+
 	if (!download("item_info.txt", items_fpath))
 		return 1;
 	if (!download("input.txt", input_fpath))
 		return 2;
+	return 0;
+}
+
+struct terminator
+{
+	~terminator() {
+		LOG_DEBUG("~terminator()");
+		sync_resources();
+	}
+};
+
+int main()
+{
+	using namespace anp;
+
+	std::signal(SIGINT, [] (int sig) {
+		LOG_DEBUG("SIGINT raised");
+		sync_resources();
+	});
+
+	// Auto uploader on program finish
+	std::unique_ptr<terminator> terminator_inst = std::make_unique<terminator>();
+
+	std::cout << "Nutrition Calculator\n";
+
+	auto ret = sync_resources();
+	if (ret != 0)
+		return ret;
+
 	job();
+
+	return 0;
 }
 	
 

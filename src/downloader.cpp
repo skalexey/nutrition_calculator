@@ -54,31 +54,42 @@ namespace anp
 
 						if (m_f_tp != decltype(m_f_tp)())
 						{
+							// Check if files contents differ
+							auto dwl_contents = utils::file_contents(this->m_download);
+							auto f_contents = utils::file_contents(m_target);
+							bool content_differs = false;
+							if (std::hash<std::string>{}(dwl_contents)
+								!= std::hash<std::string>{}(f_contents))
+								content_differs = true;
+
+							// Check the modification time
 							if (m_f_tp < m_tp)
 							{
 								// Overwrite with the download
-								if (!backup_local_file())
-									notify(erc::backup_error);
-								else
+								if (content_differs)
 								{
-									if (replace_with_download())
-										notify(http_client::erc::no_error);
+									if (!backup_local_file())
+										notify(erc::backup_error);
 									else
-										notify(erc::store_download_error);
+									{
+										if (replace_with_download())
+											notify(http_client::erc::no_error);
+										else
+											notify(erc::store_download_error);
+									}
 								}
+								else
+									notify(http_client::erc::no_error);
 							}
 							else
 							{
 								// The local file is newer;
 								LOG_DEBUG("The local file is newer");
-								auto bac_contents = utils::file_contents(this->m_backup);
-								auto f_contents = utils::file_contents(m_target);
-								if (std::hash<std::string>{}(bac_contents)
-									!= std::hash<std::string>{}(f_contents))
+								if (content_differs)
 									notify(erc::uncommitted_changes);
 								else
 								{
-									LOG_DEBUG("files are the same");
+									LOG_DEBUG("Files contents are the same");
 									notify(http_client::erc::no_error);
 								}
 							}
@@ -212,6 +223,11 @@ namespace anp
 		);
 	}
 
+	bool downloader::is_file_updated()
+	{
+		return m_is_file_updated;
+	}
+
 	bool downloader::backup_local_file()
 	{
 		assert(!m_target.empty());
@@ -230,6 +246,7 @@ namespace anp
 	{
 		if (utils::move_file(m_download, m_target) == 0)
 		{
+			m_is_file_updated = true;
 			LOG_VERBOSE("Download file successfully stored into the local file's path '" << m_target << "'");
 			return true;
 		}
@@ -259,6 +276,7 @@ namespace anp
 		m_download.clear();
 		m_tp = decltype(m_tp)();
 		m_f_tp = decltype(m_f_tp)();
+		m_is_file_updated = false;
 	}
 
 	bool downloader::restore_from_backup()

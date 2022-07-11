@@ -35,6 +35,8 @@ namespace anp
 			const std::filesystem::path& target_path = std::filesystem::path()
 		);
 
+		bool is_file_updated();
+
 	protected:
 		void on_notify(int ec) override;
 		void on_reset() override;
@@ -52,5 +54,6 @@ namespace anp
 		std::filesystem::path m_target;
 		std::filesystem::path m_download;
 		std::chrono::system_clock::time_point m_tp, m_f_tp;
+		bool m_is_file_updated = false;
 	};
 }
