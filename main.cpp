@@ -189,12 +189,13 @@ bool upload_file(const fs::path& local_path)
 	using namespace anp;
 	uploader u;
 	if (u.upload_file("skalexey.ru", 80, local_path, "/nc/h.php") == http_client::erc::no_error)
-		LOG("Uploaded '" << local_path << "'");
-	else
 	{
-		LOG_ERROR("Error while uploading '" << local_path << "'");
-		return false;
+		LOG("Uploaded '" << local_path << "'");
+		return true;
 	}
+	else
+		LOG_ERROR("Error while uploading '" << local_path << "'");
+	return false;
 }
 
 void upload_resources()
