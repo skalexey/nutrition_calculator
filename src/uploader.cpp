@@ -1,8 +1,8 @@
-﻿// uploader.cpp
+// uploader.cpp
 
-//#ifdef __cpp_lib_format
+#ifdef __cpp_lib_format
 #include <format>
-//#endif
+#endif
 #include <fstream>
 #include <tcp/client.h>
 #include <utils/Log.h>
