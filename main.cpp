@@ -98,11 +98,11 @@ int job()
 		items.resize(items.size() - 1);
 		utils::file_remove_last_line_f(*utils::input::get_file());
 		return true;
-		});
+	});
 	utils::input::register_command("temp_dir", [] {
 		LOG(std::filesystem::temp_directory_path());
 		return true;
-		});
+	});
 
 	while (utils::input::last_command != "exit")
 	{
@@ -111,7 +111,7 @@ int job()
 			&& utils::input::last_command != "exit"
 			&& utils::input::last_command != "new"
 			&& utils::input::last_command != "total"
-			)
+		)
 		{
 			item item;
 
@@ -135,7 +135,7 @@ int job()
 				rn += n;
 			rn *= r.weight;
 			return ln > rn;
-			});
+		});
 
 		std::cout << std::setw(34) << "title |";
 		std::cout << std::setw(10) << "w (g) |";
@@ -245,6 +245,7 @@ int main()
 			LOG_ERROR("Error while downloading resource '" << remote_path << "'" << " to '" << local_path << "'");
 			return false;
 		}
+		LOG("Resource updated from the remote: '" << local_path << "'");
 		return true;
 	};
 	
