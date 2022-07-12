@@ -3,7 +3,6 @@
 #include <string>
 #include <algorithm>
 #include <type_traits>
-#include <functional>
 #ifdef __cpp_lib_format
 #include <format>
 #endif
@@ -55,11 +54,8 @@ namespace anp
 						if (m_f_tp != decltype(m_f_tp)())
 						{
 							// Check if files contents differ
-							auto dwl_contents = utils::file_contents(this->m_download);
-							auto f_contents = utils::file_contents(m_target);
 							bool content_differs = false;
-							if (std::hash<std::string>{}(dwl_contents)
-								!= std::hash<std::string>{}(f_contents))
+							if (!utils::file::same(m_download, m_target))
 								content_differs = true;
 
 							// Check the modification time
@@ -165,7 +161,7 @@ namespace anp
 #else
 								LOG_DEBUG("Parsed date: " << utils::time_to_string(m_tp));
 #endif
-								m_f_tp = utils::file_modif_time(m_target);
+								m_f_tp = utils::file::modif_time(m_target);
 #ifdef __cpp_lib_format
 								LOG_DEBUG(std::format("Local file date: {0:%a, %d %b %Y %H:%M:%S GMT}", m_f_tp));
 #else
@@ -232,7 +228,7 @@ namespace anp
 	{
 		assert(!m_target.empty());
 		fs::path bac = m_target.parent_path() / fs::path(m_target.filename().string() + ".bac");
-		if (utils::copy_file(m_target, bac) == 0)
+		if (utils::file::copy_file(m_target, bac) == 0)
 		{
 			LOG_VERBOSE("Backup of the local file created in '" << bac << "'");
 			m_backup = bac;
@@ -244,7 +240,7 @@ namespace anp
 
 	bool downloader::replace_with_download()
 	{
-		if (utils::move_file(m_download, m_target) == 0)
+		if (utils::file::move_file(m_download, m_target) == 0)
 		{
 			m_is_file_updated = true;
 			LOG_VERBOSE("Download file successfully stored into the local file's path '" << m_target << "'");
@@ -283,14 +279,14 @@ namespace anp
 	{
 		if (!m_backup.empty())
 			if (!m_target.empty())
-				return utils::move_file(m_backup, m_target) == 0;
+				return utils::file::move_file(m_backup, m_target) == 0;
 		return false;
 	}
 
 	bool downloader::remove_backup()
 	{
 		if (!m_backup.empty())
-			return utils::remove_file(m_backup);
+			return utils::file::remove_file(m_backup);
 		return false;
 	}
 }

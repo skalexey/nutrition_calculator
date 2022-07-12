@@ -32,7 +32,7 @@ namespace anp
 		std::ifstream f(local_path);
 		if (!f.is_open())
 			return notify(erc::file_not_exists);
-		std::string file_data = utils::file_contents(local_path);
+		std::string file_data = utils::file::contents(local_path);
 		headers.add({ "Content-Type", "multipart/form-data; boundary=dsfjiofadsio"});
 		std::string body = utils::format_str(
 			"--dsfjiofadsio\r\n"

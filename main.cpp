@@ -46,11 +46,6 @@ void store_item(const item& item)
 	items_fo << item;
 }
 
-void send_file()
-{
-
-}
-
 bool enter_item(item& to)
 {
 	// Title
@@ -71,6 +66,8 @@ bool enter_item(item& to)
 	return to;
 }
 
+int sync_resources();
+
 int job()
 {
 	//items_fo.open(items_fname, std::ios::app | std::ios::binary);
@@ -84,8 +81,8 @@ int job()
 		auto cur_dt = utils::current_datetime("%02i-%02i-%02i-%03li");
 		auto new_fname_input = std::filesystem::path(input_fpath.parent_path() / std::filesystem::path(utils::format_str("input-%s.txt", cur_dt.c_str())));
 		auto new_fname_info = std::filesystem::path(items_fpath.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
-		utils::move_file(input_fpath.string(), new_fname_input.string());
-		utils::copy_file(items_fpath.string(), new_fname_info.string());
+		utils::file::move_file(input_fpath.string(), new_fname_input.string());
+		utils::file::copy_file(items_fpath.string(), new_fname_info.string());
 		// Exit from the input loop
 		return false;
 	};
@@ -96,11 +93,15 @@ int job()
 	utils::input::register_command("total");
 	utils::input::register_command("remove_last", [&] {
 		items.resize(items.size() - 1);
-		utils::file_remove_last_line_f(*utils::input::get_file());
+		utils::file::remove_last_line_f(*utils::input::get_file());
 		return true;
 	});
 	utils::input::register_command("temp_dir", [] {
 		LOG(std::filesystem::temp_directory_path());
+		return true;
+	});
+	utils::input::register_command("sync", [] {
+		sync_resources();
 		return true;
 	});
 
