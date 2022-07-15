@@ -23,13 +23,18 @@
 #include "downloader.h"
 #include "uploader.h"
 #include "item.h"
+#include <DMBCore.h>
 
 LOG_POSTFIX("\n");
 
 namespace fs = std::filesystem;
 
-const std::filesystem::path items_fpath = std::filesystem::temp_directory_path().append("item_info.txt").string();
-const std::filesystem::path input_fpath = std::filesystem::temp_directory_path().append("input.txt").string();
+const fs::path items_fpath = fs::temp_directory_path().append("item_info.txt").string();
+const fs::path input_fpath = fs::temp_directory_path().append("input.txt").string();
+const fs::path identity_path = fs::temp_directory_path().append("identity.json").string();
+
+std::unique_ptr<dmb::Model> identity_model_ptr;
+
 std::ofstream items_fo;
 std::ifstream items_fi;
 
@@ -79,8 +84,8 @@ int job()
 	auto finish_input = [&] {
 		utils::input::close_input();
 		auto cur_dt = utils::current_datetime("%02i-%02i-%02i-%03li");
-		auto new_fname_input = std::filesystem::path(input_fpath.parent_path() / std::filesystem::path(utils::format_str("input-%s.txt", cur_dt.c_str())));
-		auto new_fname_info = std::filesystem::path(items_fpath.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
+		auto new_fname_input = fs::path(input_fpath.parent_path() / fs::path(utils::format_str("input-%s.txt", cur_dt.c_str())));
+		auto new_fname_info = fs::path(items_fpath.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
 		utils::file::move_file(input_fpath.string(), new_fname_input.string());
 		utils::file::copy_file(items_fpath.string(), new_fname_info.string());
 		// Exit from the input loop
@@ -97,7 +102,7 @@ int job()
 		return true;
 	});
 	utils::input::register_command("temp_dir", [] {
-		LOG(std::filesystem::temp_directory_path());
+		LOG(fs::temp_directory_path());
 		return true;
 	});
 	utils::input::register_command("sync", [] {
@@ -253,8 +258,32 @@ struct terminator
 	}
 };
 
+bool ask_identity()
+{
+	std::string name;
+	std::cout << "Enter your login name: ";
+	bool tried = false;
+	do
+	{
+		if (tried)
+			std::cout << " > ";
+		if (!utils::input::getline(std::cin, name))
+			return false;
+		tried = true;
+	} while (name.empty());
+
+	identity_model_ptr->Load(identity_path.string());
+	vl::Object& data = identity_model_ptr->GetContent().GetData();
+	data["user"].AsObject().Set("name", name);
+	auto& user_name = data["user"]["name"];
+	//data["user"] = name;
+	identity_model_ptr->Store(identity_path.string(), { true });
+	return true;
+}
+
 int main()
 {
+	identity_model_ptr = std::make_unique<dmb::Model>();
 	using namespace anp;
 
 	std::signal(SIGINT, [] (int sig) {
@@ -267,6 +296,20 @@ int main()
 
 	std::cout << "Nutrition Calculator\n";
 
+	if (!identity_model_ptr->Load(identity_path.string()))
+	{
+		if (!ask_identity())
+		{
+			LOG("No login information has been provided. Exit.");
+			return 0;
+		}
+	}
+	else
+	{
+		LOG("Hello " << identity_model_ptr->GetContent().GetData()["user"]["name"].AsString().Val() << "!");
+	}
+
+	identity_model_ptr.reset(nullptr);
 	auto ret = sync_resources();
 	if (ret != 0)
 		return ret;
