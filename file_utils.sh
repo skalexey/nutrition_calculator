@@ -59,6 +59,14 @@ function dir_full_path() {
 	cd "$cur_dir"
 }
 
+function dir_name() {
+	[ -z "$1" ] && return 1 # directory path
+	[ ! -d "$1" ] && return 2
+	
+	local dp="$(dir_full_path "$1")"
+	echo $(basename "$dp")
+}
+
 function file_full_path() {
 	[ -z "$1" ] && return 1 # file path
 	[ ! -f "$1" ] && return 2
