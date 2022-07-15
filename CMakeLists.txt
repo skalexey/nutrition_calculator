@@ -48,11 +48,27 @@ add_subdirectory ("${UTILS_DIR}" "${UTILS_DIR}/Build-cmake")
 
 set(CUSTOM_INCLUDES ${CUSTOM_INCLUDES} ${utils_INCLUDES})
 
+# Build directory name
+if (CMAKE_CXX_COMPILER EQUAL "g++")
+	set(BUILD_DIR_NAME "Build-g++")
+else ()
+	set(BUILD_DIR_NAME "Build-cmake")
+endif ()
+
 # Networking dependency
 if ("${NETLIB_DIR}" STREQUAL "")
 	set(NETLIB_DIR "${DEPS}/Networking/netlib")
 else()
 	message("NETLIB_DIR: ${NETLIB_DIR}")
+endif()
+
+add_subdirectory("${NETLIB_DIR}" "${NETLIB_DIR}/${BUILD_DIR_NAME}")
+
+# DMBCore dependency
+if ("${DMBCORE_DIR}" STREQUAL "")
+	set(DMBCORE_DIR "${DEPS}/DataModelBuilder/Core")
+else()
+	message("DMBCORE_DIR: ${DMBCORE_DIR}")
 endif()
 
 if (CMAKE_CXX_COMPILER EQUAL "g++")
@@ -61,12 +77,13 @@ else ()
 	set(BUILD_DIR_NAME "Build-cmake")
 endif ()
 
-add_subdirectory("${NETLIB_DIR}" "${NETLIB_DIR}/${BUILD_DIR_NAME}")
+add_subdirectory("${DMBCORE_DIR}" "${DMBCORE_DIR}/${BUILD_DIR_NAME}")
 
 set(nutrition_calculator_INCLUDES
 	"${PROJECT_SOURCE_DIR}/include"
 	"${CUSTOM_INCLUDES}"
 	"${NETLIB_INCLUDES}"
+	"${DMBCORE_INCLUDES}"
 )
 
 if (NOT "${INCLUDES}" STREQUAL "")
@@ -94,6 +111,7 @@ add_executable (nutrition_calculator ${HEADERS} ${SRC})
 target_link_libraries(nutrition_calculator utils)
 
 target_link_libraries (nutrition_calculator netlib)
+target_link_libraries (nutrition_calculator DMBCore)
 
 # add_custom_command(
 #     TARGET nutrition_calculator PRE_BUILD

@@ -1,13 +1,23 @@
 #!/bin/bash
 
+function update_dir() {
+	[ ! -d "$1" ] && return 1
+	cd ${nutrition_calculator_deps}/"$1"
+	python clean.py full
+}
+
 function clean_with_deps()
 {
+	if [ "$1" == "dmbcore" ]; then
+		update_dir DataModelBuilder/Core
+		return 0
+	fi
 	source external_config.sh
 	python clean.py full
-	cd ${nutrition_calculator_deps}/Utils
-	python clean.py full
-	cd ${nutrition_calculator_deps}/Networking/netlib
-	python clean.py full
+
+	update_dir Utils
+	update_dir Networking/netlib
+	update_dir DataModelBuilder/Core
 }
 
 clean_with_deps $@

@@ -106,18 +106,18 @@ build()
 		fi
 	fi
 
-	[ ! -d "$rootDirectory" ] && log_error "Non-existent project directory passed '$rootDirectory'" " -" && exit 1 || cd "$rootDirectory"
+	[ ! -d "$rootDirectory" ] && log_error "Non-existent project directory passed '$rootDirectory'" " -" && exit 1
 
 	if [[ "$rootDirectory" != "." ]]; then
 		local folderName=$rootDirectory
 	fi
 
-	local build="${buildFolderPrefix}-cmake"
+	local build="$rootDirectory/${buildFolderPrefix}-cmake"
 
 	log "Output directory: '$build'" " -"
 
 	[ ! -d "$build" ] && mkdir $build || log "	already exists"
-	cd $build
+	cd "$build"
 
 	if $reconfigure; then
 		local cmd="rm CMakeCache.txt"
