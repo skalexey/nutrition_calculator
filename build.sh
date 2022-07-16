@@ -67,10 +67,10 @@ build()
 			elif [[ "$arg" == "release" ]]; then
 				log "'release' option passed. Set Release build type" " --"
 				local buildConfig="Release"
-				local custom_config=true
 				if [ -f "build_config_release.sh" ]; then
 					log "Load build_config_release.sh"
 					source build_config_release.sh
+					local custom_config=true
 				else
 					log "build_config_release.sh was not found. You can create it and override settings for release build"
 				fi

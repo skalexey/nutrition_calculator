@@ -20,8 +20,7 @@ function update_scripts()
 
 	$automation_dir/run.sh \
 		"$automation_dir/build_sh/deliver_build_scripts_job.sh" \
-			"$THIS_DIR" \
-			"no-config"
+			"$THIS_DIR"
 
 	[ $? -ne 0 ] && log_error "Error while delivering files" && return 2
 
