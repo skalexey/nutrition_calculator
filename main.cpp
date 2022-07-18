@@ -27,6 +27,9 @@
 
 LOG_POSTFIX("\n");
 
+#define COUT(msg) std::cout << msg
+#define MSG(msg) COUT(msg << "\n")
+
 namespace fs = std::filesystem;
 
 const fs::path items_fpath = fs::temp_directory_path().append("item_info.txt").string();
@@ -102,7 +105,7 @@ int job()
 		return true;
 	});
 	utils::input::register_command("temp_dir", [] {
-		LOG(fs::temp_directory_path());
+		MSG(fs::temp_directory_path().string());
 		return true;
 	});
 	utils::input::register_command("sync", [] {
@@ -196,7 +199,7 @@ bool upload_file(const fs::path& local_path)
 	uploader u;
 	if (u.upload_file("skalexey.ru", 80, local_path, "/nc/h.php") == http_client::erc::no_error)
 	{
-		LOG("Uploaded '" << local_path << "'");
+		MSG("Uploaded '" << local_path << "'");
 		return true;
 	}
 	else
@@ -210,7 +213,7 @@ int sync_resources()
 
 	downloader d;
 	auto download = [&](const std::string& remote_path, const fs::path& local_path) -> bool {
-		LOG("Download remote version of resource '" << local_path.filename() << "'...");
+		MSG("Download remote version of resource '" << local_path.filename() << "'...");
 		if (d.download_file("skalexey.ru", 80, utils::format_str("/nc/s.php?p=%s", remote_path.c_str()), local_path) != http_client::erc::no_error)
 		{
 			if (d.errcode() == downloader::erc::uncommitted_changes)
@@ -228,7 +231,7 @@ int sync_resources()
 				}
 				catch (std::string s)
 				{
-					LOG("Emergency exit (" << s << ")");
+					MSG("Emergency exit (" << s << ")");
 					return false;
 				}
 				return true;
@@ -237,9 +240,9 @@ int sync_resources()
 			return false;
 		}
 		if (d.is_file_updated())
-			LOG("Resource updated from the remote: '" << local_path << "'");
+			MSG("Resource updated from the remote: '" << local_path.string() << "'");
 		else
-			LOG("Local resource is up to date: '" << local_path << "'");
+			MSG("Local resource is up to date: '" << local_path.string() << "'");
 		return true;
 	};
 
@@ -300,13 +303,13 @@ int main()
 	{
 		if (!ask_identity())
 		{
-			LOG("No login information has been provided. Exit.");
+			MSG("No login information has been provided. Exit.");
 			return 0;
 		}
 	}
 	else
 	{
-		LOG("Hello " << identity_model_ptr->GetContent().GetData()["user"]["name"].AsString().Val() << "!");
+		MSG("Hello " << identity_model_ptr->GetContent().GetData()["user"]["name"].AsString().Val() << "!");
 	}
 
 	identity_model_ptr.reset(nullptr);
