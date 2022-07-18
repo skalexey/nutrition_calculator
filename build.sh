@@ -115,7 +115,7 @@ build()
 
 	log "Output directory: '$build'" " -"
 
-	[ ! -d "$build" ] && mkdir $build || log "	already exists"
+	[ ! -d "$build" ] && mkdir $build || log "	already exists" " --"
 	cd "$build"
 
 	if $reconfigure; then
