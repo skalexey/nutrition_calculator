@@ -92,8 +92,7 @@ build()
 	fi
 
 	# check for dependencies
-	local enterDirectory=${pwd}
-
+	local enterDirectory=${PWD}
 	if [ -f "get_dependencies.sh" ]; then
 		source get_dependencies.sh $@
 		local retval=$?
