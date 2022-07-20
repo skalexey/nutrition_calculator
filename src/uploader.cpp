@@ -49,9 +49,7 @@ namespace anp
 			, int code
 			) -> bool
 		{
-			LOG_DEBUG("\nReceived " << sz << " bytes:");
 			std::string s(data.begin(), data.begin() + sz);
-			LOG_DEBUG(s);
 			if (s.find("was uploaded successfully") != std::string::npos)
 			{
 				LOG_DEBUG("Upload has been completed");

@@ -16,12 +16,22 @@ namespace anp
 	class http_client
 	{
 	public:
+		struct headers_t;
+
+		using http_response_cb = std::function<bool(
+			const headers_t& headers,
+			const std::vector<char>&	// Buffer
+			, std::size_t				// Size
+		)>;
+
 		enum erc : int
 		{
 			unknown = -1,
 			no_error = 0,
 			connection_error,
 			connection_process_error,
+			receive_size_error,
+			status_parse_error,
 			count
 		};
 
@@ -51,7 +61,7 @@ namespace anp
 			int port,
 			const std::string& method,
 			const std::string& query,
-			const data_cb& on_receive = data_cb(),
+			const http_response_cb& on_receive = http_response_cb(),
 			const headers_t& headers = headers_t(),
 			const std::string& body = ""
 		);
@@ -61,7 +71,7 @@ namespace anp
 			int port,
 			const std::string& method,
 			const std::string& query,
-			const data_cb& on_receive = data_cb(),
+			const http_response_cb& on_receive = http_response_cb(),
 			const headers_t& headers = headers_t(),
 			const std::string& body = ""
 		);
@@ -70,14 +80,14 @@ namespace anp
 			const std::string& host,
 			int port,
 			const std::string& request,
-			const data_cb& on_receive
+			const http_response_cb& on_receive
 		);
 
 		void request_async(
 			const std::string& host,
 			int port,
 			const std::string& request,
-			const data_cb& on_receive
+			const http_response_cb& on_receive
 		);
 
 		inline int errcode() {
@@ -103,5 +113,10 @@ namespace anp
 		std::unique_lock<std::mutex> m_cv_ul;
 		std::condition_variable m_cv;
 		std::unique_ptr<tcp::client> m_client;
+		headers_t m_headers;
+		long long m_content_length = -1;
+		bool m_is_header = true;
+		int m_status;
+		std::string m_last_part;
 	};
 }

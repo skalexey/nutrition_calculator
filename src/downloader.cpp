@@ -1,5 +1,6 @@
 // downloader.cpp
 
+#include <exception>
 #include <string>
 #include <algorithm>
 #include <type_traits>
@@ -39,13 +40,7 @@ namespace anp
 			, int code
 			) -> bool
 			{
-				LOG_DEBUG("\nReceived " << sz << " bytes:");
 				std::string s(data.begin(), data.begin() + sz);
-				LOG_DEBUG(s);
-
-				//if (errcode() != http_client::erc::no_error 
-				//	&& errcode() != http_client::erc::unknown)
-				//	return false;
 
 				if (s.find("Auth error") != std::string::npos)
 				{
@@ -132,7 +127,7 @@ namespace anp
 							{
 								m_content_length = std::atoi(sc.c_str());
 							}
-							catch (...)
+							catch (std::exception const& e)
 							{
 								LOG_ERROR("Can't parse content length '" << sc << "'");
 								notify(erc::parse_size_error);
