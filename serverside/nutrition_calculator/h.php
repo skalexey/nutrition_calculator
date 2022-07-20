@@ -1,9 +1,24 @@
-
 <?php
-upload_file();
 
-function upload_file(){
-	$uploadTo = "uploads/";
+include 'l.php';
+
+$u = $_GET['u'];
+$t = $_GET['t'];
+
+if (auth($u, $t) != 0)
+{
+	echo "Auth error";
+	exit(1);
+}
+
+include 'u.php';
+
+upload_file($u);
+
+function upload_file($u){
+	$d = get_user_dir($u);
+	$fpath = "$d/$file";
+	$uploadTo = "$d/";
 	$allowFileType = array('jpg','png','jpeg','gif','pdf','doc','txt');
 	$fileName = $_FILES['file']['name'];
 	$tempPath=$_FILES["file"]["tmp_name"];
