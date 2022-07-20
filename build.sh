@@ -81,6 +81,9 @@ build()
 				log "'$arg' option passed. Will not build the project. Only make the config and remove CMakeCache.txt" " --"
 				local onlyConfig=true
 				local reconfigure=true
+			elif [[ "$arg" == "reconfigure" ]] || [[ "$arg" == "-rcb" ]]; then
+				log "'$arg' option passed. Will reconfigure and build the project." " --"
+				local reconfigure=true
 			fi
 		fi	
 		local argIndex=$((argIndex + 1))
