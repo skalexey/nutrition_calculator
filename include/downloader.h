@@ -21,11 +21,13 @@ namespace anp
 			parse_date_error,
 			receive_size_error,
 			no_content_length,
+			no_file,
 			uncommitted_changes,
 			no_date,
 			file_error,
 			backup_error,
-			store_download_error
+			store_download_error,
+			auth_error
 		};
 
 		int download_file(
@@ -36,6 +38,8 @@ namespace anp
 		);
 
 		bool is_file_updated();
+		// TODO: see how to return it to the protected
+		bool replace_with_download();
 
 	protected:
 		void on_notify(int ec) override;
@@ -43,7 +47,6 @@ namespace anp
 
 	private:
 		bool backup_local_file();
-		bool replace_with_download();
 		void create_download_file();
 		bool restore_from_backup();
 		bool remove_backup();

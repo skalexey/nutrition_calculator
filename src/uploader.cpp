@@ -47,7 +47,7 @@ namespace anp
 			const std::vector<char>& data
 			, std::size_t sz
 			, int code
-			)
+			) -> bool
 		{
 			LOG_DEBUG("\nReceived " << sz << " bytes:");
 			std::string s(data.begin(), data.begin() + sz);
@@ -55,13 +55,21 @@ namespace anp
 			if (s.find("was uploaded successfully") != std::string::npos)
 			{
 				LOG_DEBUG("Upload has been completed");
-				return notify(http_client::erc::no_error);
+				notify(http_client::erc::no_error);
+				return true;
+			}
+			else if (s.find("Auth error") != std::string::npos)
+			{
+				notify(erc::auth_error);
+				return false;
 			}
 			else
 			{
 				LOG_DEBUG("Upload failed");
-				return notify(erc::transfer_error);
+				notify(erc::transfer_error);
+				return true;
 			}
+			return false;
 		}, headers, body);
 	}
 

@@ -5,6 +5,7 @@
 #include <tcp/client.h>
 #include <utils/Log.h>
 #include <utils/string_utils.h>
+#include <utils/profiler.h>
 #include <tcp/client.h>
 #include "http_client.h"
 
@@ -23,6 +24,7 @@ namespace anp
 	// Define destructor in cpp because of the incompleteness of tcp/client type in the header
 	http_client::~http_client()
 	{
+		LOG_DEBUG("http_client::~http_client");
 	}
 
 	std::string http_client::parse_header(const std::string& response, const std::string& header)
@@ -49,7 +51,23 @@ namespace anp
 		, const data_cb& on_receive
 	)
 	{
+		request_async(host, port, request, on_receive);
+		wait();
+		return m_error_code;
+	}
+
+	void http_client::request_async(
+		const std::string& host
+		, int port
+		, const std::string& request
+		, const data_cb& on_receive
+	)
+	{
 		reset();
+
+		m_client->set_on_close([&] {
+			notify(m_error_code);
+		});
 
 		m_client->set_on_connect([=](const std::error_code& ec) {
 			if (!ec)
@@ -62,26 +80,34 @@ namespace anp
 				LOG_ERROR("Error during connection.");
 				notify(connection_process_error);
 			}
-			});
+		});
 
 
 		if (m_client->connect(host, port))
 		{
 			LOG_DEBUG("Set on_receive task");
-			m_client->set_on_receive(on_receive);
+			m_client->set_on_receive([=](
+				const std::vector<char>& data
+				, std::size_t sz
+				, int id
+			) {
+					if (on_receive)
+						PROFILE_TIME(return on_receive(data, sz, id));
+				return false;
+			});
 		}
 		else
 		{
-			return m_error_code = erc::connection_error;
+			m_error_code = erc::connection_error;
 		}
+	}
 
+	void http_client::wait() {
 		LOG_DEBUG("Wait end of response...");
 		m_cv.wait(m_cv_ul);
 		LOG_DEBUG("Response received.");
 		if (m_client->is_connected())
 			m_client->disconnect();
-
-		return m_error_code;
 	}
 
 	int http_client::query(
@@ -94,7 +120,26 @@ namespace anp
 		const std::string& body
 	)
 	{
-		std::string req = utils::format_str("%s %s HTTP/1.1\r\n", method.c_str(), query.c_str());
+		query_async(host, port, method, query, on_receive, headers, body);
+		wait();
+		return m_error_code;
+	}
+
+	void http_client::query_async(
+		const std::string& host,
+		int port,
+		const std::string& method,
+		const std::string& query,
+		const data_cb& on_receive,
+		const headers_t& headers,
+		const std::string& body
+	)
+	{
+		std::string req = utils::format_str(
+			"%s %s HTTP/1.1\r\n"
+			, utils::str_toupper(method).c_str()
+			, query.c_str()
+		);
 		std::map<std::string, std::string> def_headers{
 			{ "Connection", "keep-alive" },
 			{ "Host", host }
@@ -118,7 +163,7 @@ namespace anp
 		req += "\r\n";
 		req += body;
 
-		return request(
+		request_async(
 			host
 			, port
 			, req
@@ -130,15 +175,14 @@ namespace anp
 	{
 		on_before_notify(ec);
 		m_error_code = ec;
-		if (m_error_code != erc::no_error)
-			m_client->disconnect();
-		on_notify(ec);
 		m_cv.notify_one();
+		on_notify(ec);
 		return m_error_code;
 	}
 
 	void http_client::reset()
 	{
+		LOG_DEBUG("http_client::reset()");
 		m_error_code = erc::unknown;
 		m_client = std::make_unique<anp::tcp::client>();
 		on_reset();

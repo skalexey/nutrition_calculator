@@ -31,16 +31,27 @@ namespace anp
 	)
 	{
 		m_target = target_path;
+		m_f_tp = utils::file::modif_time(m_target);
 
 		return query(host, port, "GET", q, [=](
 			const std::vector<char>& data
 			, std::size_t sz
 			, int code
-			)
+			) -> bool
 			{
-				LOG_VERBOSE("\nReceived " << sz << " bytes:");
+				LOG_DEBUG("\nReceived " << sz << " bytes:");
 				std::string s(data.begin(), data.begin() + sz);
-				LOG_VERBOSE(s);
+				LOG_DEBUG(s);
+
+				//if (errcode() != http_client::erc::no_error 
+				//	&& errcode() != http_client::erc::unknown)
+				//	return false;
+
+				if (s.find("Auth error") != std::string::npos)
+				{
+					notify(erc::auth_error);
+					return false;
+				}
 
 				auto on_content_length_changed = [=] {
 					if (m_content_length <= 0)
@@ -50,9 +61,18 @@ namespace anp
 							notify(erc::receive_size_error);
 							return false;
 						}
-
-						if (m_f_tp != decltype(m_f_tp)())
+						
+						if (utils::file::exists(m_target) && m_f_tp == decltype(m_f_tp)())
 						{
+							notify(erc::file_error);
+						}
+						else
+						{
+							if (!utils::file::exists(m_target))
+							{
+								auto f = std::ofstream(m_target);
+								f.close();
+							}
 							// Check if files contents differ
 							bool content_differs = false;
 							if (!utils::file::same(m_download, m_target))
@@ -89,10 +109,6 @@ namespace anp
 									notify(http_client::erc::no_error);
 								}
 							}
-						}
-						else
-						{
-							notify(erc::file_error);
 						}
 
 						m_content_length = -1;
@@ -132,7 +148,7 @@ namespace anp
 						{
 							LOG_ERROR("No content length received from the server");
 							notify(erc::no_content_length);
-							return;
+							return true;
 						}
 					}
 					// Parse date
@@ -161,7 +177,7 @@ namespace anp
 #else
 								LOG_DEBUG("Parsed date: " << utils::time_to_string(m_tp));
 #endif
-								m_f_tp = utils::file::modif_time(m_target);
+								
 #ifdef __cpp_lib_format
 								LOG_DEBUG(std::format("Local file date: {0:%a, %d %b %Y %H:%M:%S GMT}", m_f_tp));
 #else
@@ -172,13 +188,14 @@ namespace anp
 							{
 								LOG_ERROR("Can't parse file modification date '" << sc << "'");
 								notify(erc::parse_date_error);
-								return;
+								return true;
 							}
 						}
 						else
 						{
-							LOG_ERROR("No content length received from the server");
-							notify(erc::no_content_length);
+							LOG_ERROR("No modification date received from the server");
+							notify(erc::no_file);
+							return true;
 						}
 					}
 				}
@@ -271,7 +288,6 @@ namespace anp
 		m_backup.clear();
 		m_download.clear();
 		m_tp = decltype(m_tp)();
-		m_f_tp = decltype(m_f_tp)();
 		m_is_file_updated = false;
 	}
 

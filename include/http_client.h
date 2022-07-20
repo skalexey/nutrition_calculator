@@ -56,7 +56,24 @@ namespace anp
 			const std::string& body = ""
 		);
 
+		void query_async(
+			const std::string& host,
+			int port,
+			const std::string& method,
+			const std::string& query,
+			const data_cb& on_receive = data_cb(),
+			const headers_t& headers = headers_t(),
+			const std::string& body = ""
+		);
+
 		int request(
+			const std::string& host,
+			int port,
+			const std::string& request,
+			const data_cb& on_receive
+		);
+
+		void request_async(
 			const std::string& host,
 			int port,
 			const std::string& request,
@@ -67,11 +84,14 @@ namespace anp
 			return m_error_code.load();
 		}
 
+		void wait();
+
+		int notify(int ec);
+
 	protected:
 		std::string parse_header(const std::string& response, const std::string& header);
 
 	protected:
-		int notify(int ec);
 		virtual inline void on_before_notify(int ec) {};
 		virtual inline void on_notify(int ec) {};
 		void reset();

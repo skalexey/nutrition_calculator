@@ -17,7 +17,8 @@ namespace anp
 		enum erc : int
 		{
 			file_not_exists = http_client::erc::count,
-			transfer_error
+			transfer_error,
+			auth_error
 		};
 
 		int upload_file(

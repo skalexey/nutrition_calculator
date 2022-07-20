@@ -1,6 +1,7 @@
 // main.cpp : Defines the entry point for the application.
 //
 
+#include <functional>
 #include <csignal>
 #include <memory>
 #include <string>
@@ -26,23 +27,49 @@
 #include <DMBCore.h>
 
 LOG_POSTFIX("\n");
+LOG_PREFIX("[main]: ");
 
 #define COUT(msg) std::cout << msg
 #define MSG(msg) COUT(msg << "\n")
 
 namespace fs = std::filesystem;
 
-const fs::path items_fpath = fs::temp_directory_path().append("item_info.txt").string();
-const fs::path input_fpath = fs::temp_directory_path().append("input.txt").string();
-const fs::path identity_path = fs::temp_directory_path().append("identity.json").string();
+namespace
+{
+	const fs::path items_fpath = fs::temp_directory_path().append("item_info.txt").string();
+	const fs::path input_fpath = fs::temp_directory_path().append("input.txt").string();
+	const fs::path identity_path = fs::temp_directory_path().append("identity.json").string();
 
-std::unique_ptr<dmb::Model> identity_model_ptr;
+	std::unique_ptr<dmb::Model> identity_model_ptr;
 
-std::ofstream items_fo;
-std::ifstream items_fi;
+	std::ofstream items_fo;
+	std::ifstream items_fi;
+
+	const std::string empty_string;
+
+	const std::string host = "skalexey.ru";
+	const int port = 80;
+}
 
 using items_list_t = std::vector<item>;
 
+// Function declarations
+bool get_identity(std::string* name = nullptr, std::string* pass = nullptr);
+std::string h(const std::string& s);
+bool ask_pass(std::string& s);
+bool ask_name(std::string& s);
+bool auth();
+bool upload_file(const fs::path& local_path);
+const std::string& get_user_token();
+const std::string& get_user_name();
+vl::Object* get_identity_cfg_data();
+void load_items(items_list_t& to);
+void store_item(const item& item);
+bool enter_item(item& to);
+int job();
+int sync_resources();
+
+// Definitions are all below
 void load_items(items_list_t& to)
 {
 	while (!items_fi.eof())
@@ -73,8 +100,6 @@ bool enter_item(item& to)
 
 	return to;
 }
-
-int sync_resources();
 
 int job()
 {
@@ -197,7 +222,12 @@ bool upload_file(const fs::path& local_path)
 {
 	using namespace anp;
 	uploader u;
-	if (u.upload_file("skalexey.ru", 80, local_path, "/nc/h.php") == http_client::erc::no_error)
+	if (u.upload_file(host, port, local_path
+		, utils::format_str(
+			"/nc/h.php?u=%s&t=%s"
+			, get_user_name().c_str()
+			, get_user_token().c_str()
+		)) == http_client::erc::no_error)
 	{
 		MSG("Uploaded '" << local_path << "'");
 		return true;
@@ -214,7 +244,14 @@ int sync_resources()
 	downloader d;
 	auto download = [&](const std::string& remote_path, const fs::path& local_path) -> bool {
 		MSG("Download remote version of resource '" << local_path.filename() << "'...");
-		if (d.download_file("skalexey.ru", 80, utils::format_str("/nc/s.php?p=%s", remote_path.c_str()), local_path) != http_client::erc::no_error)
+		if (d.download_file(host, port
+			, utils::format_str(
+				"/nc/s.php?p=%s&u=%s&t=%s"
+				, remote_path.c_str()
+				, get_user_name().c_str()
+				, get_user_token().c_str(),
+				get_user_token().c_str()
+			), local_path) != http_client::erc::no_error)
 		{
 			if (d.errcode() == downloader::erc::uncommitted_changes)
 			{
@@ -228,6 +265,11 @@ int sync_resources()
 						if (!upload_file(local_path))
 							return false;
 					}
+					else
+					{
+						if (utils::input::ask_user("Replace with the downloaded version?"))
+							d.replace_with_download();
+					}
 				}
 				catch (std::string s)
 				{
@@ -236,7 +278,10 @@ int sync_resources()
 				}
 				return true;
 			}
-			LOG_ERROR("Error while downloading resource '" << remote_path << "'" << " to '" << local_path << "'");
+			else if (d.errcode() == downloader::erc::parse_date_error)
+				if (utils::input::ask_user("Replace with the downloaded version?"))
+					d.replace_with_download();
+			LOG_ERROR("Error while downloading resource '" << remote_path << "'" << " to '" << local_path << "': " << d.errcode());
 			return false;
 		}
 		if (d.is_file_updated())
@@ -248,8 +293,10 @@ int sync_resources()
 
 	if (!download("item_info.txt", items_fpath))
 		return 1;
+
 	if (!download("input.txt", input_fpath))
 		return 2;
+	
 	return 0;
 }
 
@@ -261,26 +308,123 @@ struct terminator
 	}
 };
 
-bool ask_identity()
+const std::string& get_user_name()
 {
-	std::string name;
-	std::cout << "Enter your login name: ";
-	bool tried = false;
-	do
-	{
-		if (tried)
-			std::cout << " > ";
-		if (!utils::input::getline(std::cin, name))
-			return false;
-		tried = true;
-	} while (name.empty());
+	if (auto data_ptr = get_identity_cfg_data())
+		return (*data_ptr)["user"].AsObject().Get("name").AsString().Val();
+	return empty_string;
+}
 
-	identity_model_ptr->Load(identity_path.string());
+const std::string& get_user_token()
+{
+	if (auto data_ptr = get_identity_cfg_data())
+		return (*data_ptr)["user"].AsObject().Get("token").AsString().Val();
+	return empty_string;
+}
+
+vl::Object* get_identity_cfg_data()
+{
+	if (!identity_model_ptr)
+	{
+		LOG_DEBUG("Identity model is not initialized");
+		return nullptr;
+	}
+	if (!identity_model_ptr->IsLoaded())
+	{
+		LOG_DEBUG("Identity model is not loaded");
+		return nullptr;
+	}
+	return &identity_model_ptr->GetContent().GetData();
+}
+
+bool request_auth(const std::string& name, const std::string& token)
+{
+	using namespace anp;
+	http_client c;
+	bool success = false;
+	std::string response;
+	c.query(host, port, "GET"
+		, utils::format_str("/nc/a.php?u=%s&t=%s", name.c_str(), token.c_str()).c_str()
+		, [=, &success, &response, &c](
+			const std::vector<char>& data
+			, std::size_t sz
+			, int code
+		)
+		{
+			LOG_VERBOSE("\nReceived " << sz << " bytes:");
+			std::string s(data.begin(), data.begin() + sz);
+			LOG_VERBOSE(s);
+			response.insert(response.end(), data.begin(), data.end());
+			if (s.find("Authenticated successfully") != std::string::npos)
+				success = true;
+			c.notify(http_client::erc::no_error);
+			return true;
+		}
+	);
+	return success;
+}
+
+bool auth()
+{
 	vl::Object& data = identity_model_ptr->GetContent().GetData();
-	data["user"].AsObject().Set("name", name);
-	auto& user_name = data["user"]["name"];
-	//data["user"] = name;
-	identity_model_ptr->Store(identity_path.string(), { true });
+	std::string user_name, token;
+	if (!get_identity(&user_name, &token))
+		return false;
+	return request_auth(user_name, token);
+}
+
+bool ask_name(std::string& s)
+{
+	return utils::input::ask_line(s, "Enter your login name: ", " > ");
+}
+
+bool ask_pass(std::string& s)
+{
+	return utils::input::ask_line(s, "Enter password: ", " > ");
+}
+
+std::string h(const std::string& s)
+{
+	return std::to_string(std::hash<std::string>{}(s));
+}
+
+bool get_identity(std::string* user_name, std::string* user_pass)
+{
+	identity_model_ptr->Load(identity_path.string());
+	auto data_ptr = get_identity_cfg_data();
+	if (!data_ptr)
+		return false;
+
+	auto& data = *data_ptr;
+
+	auto name = get_user_name();
+	auto token = get_user_token();
+	bool store = false;
+	if (name.empty())
+	{
+		if (!ask_name(name))
+			return false;
+		data["user"].AsObject().Set("name", name);
+		store = true;
+	}
+	if (user_name)
+		user_name->swap(name);
+
+	if (token.empty())
+	{
+		std::string pass;
+		if (!ask_pass(pass))
+			return false;
+		token = h(pass);
+		data["user"].AsObject().Set("token", token);
+		store = true;
+	}
+	if (user_pass)
+		user_pass->swap(token);
+	
+	if (store)
+		identity_model_ptr->Store(identity_path.string(), { true });
+
 	return true;
 }
 
@@ -301,23 +445,34 @@ int main()
 
 	if (!identity_model_ptr->Load(identity_path.string()))
 	{
-		if (!ask_identity())
+		if (!get_identity())
 		{
 			MSG("No login information has been provided. Exit.");
 			return 0;
 		}
 	}
-	else
+
+	if (!auth())
 	{
-		MSG("Hello " << identity_model_ptr->GetContent().GetData()["user"]["name"].AsString().Val() << "!");
+		if (!utils::input::ask_user("Authentication error. Continue in offline mode?"))
+		{
+			MSG("Exit");
+			return 0;
+		}
 	}
 
-	identity_model_ptr.reset(nullptr);
+	MSG("Hello " << identity_model_ptr->GetContent().GetData()["user"]["name"].AsString().Val() << "!");
+
 	auto ret = sync_resources();
 	if (ret != 0)
-		return ret;
+		if (!utils::input::ask_user("Errors while syncing resources. Continue in offline mode?"))
+			return ret;
 
 	job();
+
+	// Let it leave longer
+	// TODO: think how to shorten its lifetime
+	//identity_model_ptr.reset(nullptr);
 
 	return 0;
 }
