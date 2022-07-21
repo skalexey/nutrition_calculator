@@ -329,15 +329,15 @@ const std::string& get_user_token()
 vl::Object* get_identity_cfg_data()
 {
 	if (!identity_model_ptr)
-	{
-		LOG_DEBUG("Identity model is not initialized");
-		return nullptr;
-	}
+		identity_model_ptr = std::make_unique<dmb::Model>();
+
 	if (!identity_model_ptr->IsLoaded())
-	{
-		LOG_DEBUG("Identity model is not loaded");
-		return nullptr;
-	}
+		if (!identity_model_ptr->Load(identity_path.string()))
+			if (!identity_model_ptr->Store(identity_path.string(), { true }))
+			{
+				LOG_ERROR("Can't create identity file");
+				return nullptr;
+			}
 	return &identity_model_ptr->GetContent().GetData();
 }
 
@@ -394,7 +394,6 @@ std::string h(const std::string& s)
 
 bool get_identity(std::string* user_name, std::string* user_pass)
 {
-	identity_model_ptr->Load(identity_path.string());
 	auto data_ptr = get_identity_cfg_data();
 	if (!data_ptr)
 		return false;
@@ -434,7 +433,6 @@ bool get_identity(std::string* user_name, std::string* user_pass)
 
 int main()
 {
-	identity_model_ptr = std::make_unique<dmb::Model>();
 	using namespace anp;
 
 	std::signal(SIGINT, [] (int sig) {
@@ -447,25 +445,24 @@ int main()
 
 	std::cout << "Nutrition Calculator\n";
 
-	if (!identity_model_ptr->Load(identity_path.string()))
+	if (!get_identity())
 	{
-		if (!get_identity())
-		{
-			MSG("No login information has been provided. Exit.");
-			return 0;
-		}
+		MSG("No login information has been provided. Exit.");
+		return 0;
 	}
 
 	if (!auth())
 	{
+		utils::file::remove_file(identity_path);
+		identity_model_ptr.reset(nullptr);
 		if (!utils::input::ask_user("Authentication error. Continue in offline mode?"))
 		{
 			MSG("Exit");
 			return 0;
 		}
 	}
-
-	MSG("Hello " << identity_model_ptr->GetContent().GetData()["user"]["name"].AsString().Val() << "!");
+	else
+		MSG("\nHello, " << identity_model_ptr->GetContent().GetData()["user"]["name"].AsString().Val() << "!\n");
 
 	auto ret = sync_resources();
 	if (ret != 0)
