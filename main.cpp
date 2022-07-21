@@ -295,9 +295,11 @@ int sync_resources()
 
 	if (!download("item_info.txt", items_fpath))
 		return 1;
-
+	MSG("");
+	
 	if (!download("input.txt", input_fpath))
 		return 2;
+	MSG("");
 	
 	return 0;
 }
