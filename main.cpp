@@ -116,6 +116,7 @@ int job()
 		auto new_fname_info = fs::path(items_fpath.parent_path() / utils::format_str("item_info-%s.txt", cur_dt.c_str()));
 		utils::file::move_file(input_fpath.string(), new_fname_input.string());
 		utils::file::copy_file(items_fpath.string(), new_fname_info.string());
+		upload_file(new_fname_info);
 		// Exit from the input loop
 		return false;
 	};
