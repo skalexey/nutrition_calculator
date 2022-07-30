@@ -15,7 +15,6 @@
 #include <exception>
 #include <cstdlib>
 #include <filesystem>
-#include <utils/string_utils.h>
 #include <utils/io_utils.h>
 #include <utils/file_utils.h>
 #include <utils/datetime.h>
@@ -389,7 +388,7 @@ bool ask_pass(std::string& s)
 
 std::string h(const std::string& s)
 {
-	return std::to_string(std::hash<std::string>{}(s));
+	return std::to_string(utils::string::hash(s));
 }
 
 bool get_identity(std::string* user_name, std::string* user_pass)
