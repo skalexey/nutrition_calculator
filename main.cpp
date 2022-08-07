@@ -230,7 +230,7 @@ bool upload_file(const fs::path& local_path)
 			, get_user_token().c_str()
 		)) == http_client::erc::no_error)
 	{
-		MSG("Uploaded '" << local_path << "'");
+		MSG("Uploaded '" << local_path.string() << "'");
 		return true;
 	}
 	else
