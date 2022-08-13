@@ -33,7 +33,7 @@ struct item_info
     // Public interface
     void print_nutrition(float weight);
     
-    inline const std::string& nutrition_title(int nutrition_index) const {
+    const std::string& nutrition_title(int nutrition_index) const {
         switch (nutrition_index)
         {
             case 0: return nutrition_protein;
@@ -72,17 +72,17 @@ struct item
     std::string title;
 
     // Public interface
-	inline item_info& info() {
+	item_info& info() {
 		static item_info empty_info;
 		return m_info_ptr ? *m_info_ptr : empty_info;
 	}
 
-    inline const item_info& get_info() const {
+    const item_info& get_info() const {
         static item_info empty_info;
         return m_info_ptr ? *m_info_ptr : empty_info;
     }
 
-    inline void set_info(const item_info_ptr& ptr) {
+    void set_info(const item_info_ptr& ptr) {
         m_info_ptr = ptr;
     }
 
