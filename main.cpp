@@ -50,7 +50,7 @@ namespace
 	const int port = 80;
 }
 
-using items_list_t = std::vector<item>;
+using items_list_t = std::list<item>;
 
 // Function declarations
 bool get_identity(std::string* name = nullptr, std::string* pass = nullptr);
@@ -83,20 +83,23 @@ void store_item(const item& item)
 bool enter_item(item& to)
 {
 	// Title
-	std::string title;
-	if (!item_info::enter_title(title, std::cin))
-		return false;
+	if (to.title.empty())
+	{
+		std::string title;
+		if (!item_info::enter_title(title, std::cin))
+			return false;
+		to.title = title;
+	}
 
-	to.title = title;
-	
-	if (auto info = item_info::load(title))
+	if (auto info = item_info::load(to.title))
 	{
 		to.set_info(info);
-		std::cout << "Item info '" << title << "' found: ";
+		std::cout << "Item info '" << to.title << "' found: ";
 		to.info().print_nutrition(100.f);
 	}
 	std::cin >> to;
-
+	if (!utils::input::last_getline_valid)
+		return false;
 	return to;
 }
 
@@ -125,6 +128,51 @@ int job()
 	utils::input::register_command("end", finish_input);
 	utils::input::register_command("new", finish_input);
 	utils::input::register_command("total");
+	utils::input::register_command("cancel");
+	utils::input::register_command("edit", [&] {
+		auto v = utils::input::last_getline_value;
+		auto p = v.find(" ");
+		if (p == std::string::npos)
+			return true;
+		auto what = v.substr(p + 1);
+		if (!what.empty())
+		{
+			auto it = std::find_if(items.begin(), items.end(), [&](auto& item) {
+				return item.title == what;
+			});
+			if (it != items.end())
+			{
+				if (enter_item(*it))
+					MSG("Edit completed");
+				else
+					MSG("Edit interrupted");
+			}
+			else
+				MSG("Item '" << what << "' not found");
+		}
+		return true;
+	});
+	utils::input::register_command("remove", [&] {
+		auto v = utils::input::last_getline_value;
+		auto p = v.find(" ");
+		if (p == std::string::npos)
+			return true;
+		auto what = v.substr(p + 1);
+		if (!what.empty())
+		{
+			auto it = std::find_if(items.begin(), items.end(), [&](auto& item) {
+				return item.title == what;
+				});
+			if (it != items.end())
+			{
+				items.erase(it);
+				MSG("Item '" << what << "' removed");
+			}
+			else
+				MSG("Item '" << what << "' not found");
+		}
+		return true;
+		});
 	utils::input::register_command("remove_last", [&] {
 		items.resize(items.size() - 1);
 		utils::file::remove_last_line_f(*utils::input::get_file());
@@ -161,7 +209,7 @@ int job()
 		}
 
 		// Sort the items
-		std::sort(items.begin(), items.end(), [](auto&& l, auto&& r) {
+		items.sort([](auto&& l, auto&& r) {
 			float ln = 0.f, rn = 0.f;
 			for (auto&& n : l.info().nutrition)
 				ln += n;

@@ -90,7 +90,7 @@ namespace anp
 			const http_response_cb& on_receive
 		);
 
-		inline int errcode() {
+		int errcode() {
 			return m_error_code.load();
 		}
 
@@ -102,10 +102,10 @@ namespace anp
 		std::string parse_header(const std::string& response, const std::string& header);
 
 	protected:
-		virtual inline void on_before_notify(int ec) {};
-		virtual inline void on_notify(int ec) {};
+		virtual void on_before_notify(int ec) {};
+		virtual void on_notify(int ec) {};
 		void reset();
-		virtual inline void on_reset() {};
+		virtual void on_reset() {};
 
 	private:
 		std::atomic<int> m_error_code = erc::unknown;
