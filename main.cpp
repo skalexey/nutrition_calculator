@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <list>
 #include <iostream>
 #include <string_view>
 #include <algorithm>
