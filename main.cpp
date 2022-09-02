@@ -15,7 +15,7 @@
 #include <fstream>
 #include <exception>
 #include <cstdlib>
-#include <filesystem>
+#include <utils/filesystem.h>
 #include <utils/io_utils.h>
 #include <utils/file_utils.h>
 #include <utils/datetime.h>
@@ -31,8 +31,6 @@ LOG_PREFIX("[main]: ");
 
 #define COUT(msg) std::cout << msg
 #define MSG(msg) COUT(msg << "\n")
-
-namespace fs = std::filesystem;
 
 namespace
 {

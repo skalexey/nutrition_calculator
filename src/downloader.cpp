@@ -154,7 +154,7 @@ namespace anp
 							try
 							{
 								m_tp = utils::parse_datetime_http(sc);
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__GNUC__)
 								const std::chrono::zoned_time local("Australia/Sydney", m_tp);
 								LOG_VERBOSE("Received modification time: " << local);
 #endif
