@@ -1,8 +1,9 @@
 #!/bin/bash
 
 function update_dir() {
-	[ ! -d "$1" ] && return 1
-	cd ${nutrition_calculator_deps}/"$1"
+    dir="$nutrition_calculator_deps/$1"
+	[ ! -d "$dir" ] && echo "No dir exists: '$dir'" return 1
+	cd "$dir"
 	python clean.py full
 }
 
