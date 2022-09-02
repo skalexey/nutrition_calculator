@@ -66,11 +66,6 @@ else()
 endif()
 set(DEPS ${DEPS} PARENT_SCOPE)
 
-# Include Utils library
-set(UTILS_DIR "${DEPS}/Utils")
-add_subdirectory ("${UTILS_DIR}" "${UTILS_DIR}/${BUILD_DIR_NAME}")
-set(CUSTOM_INCLUDES ${CUSTOM_INCLUDES} ${utils_INCLUDES})
-
 # Networking dependency
 if ("${NETLIB_DIR}" STREQUAL "")
 	set(NETLIB_DIR "${DEPS}/Networking/netlib")
@@ -143,7 +138,6 @@ message("'nutrition_calculator' project HEADERS: ${HEADERS}")
 add_executable (nutrition_calculator ${HEADERS} ${SRC})
 
 # link libraries
-target_link_libraries(nutrition_calculator utils)
 target_link_libraries (nutrition_calculator netlib)
 target_link_libraries (nutrition_calculator DMBCore)
 
