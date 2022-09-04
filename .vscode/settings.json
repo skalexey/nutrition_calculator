@@ -74,7 +74,9 @@
         "build_deps": "/home/alex/Projects",
         "build_libs": "/home/alex/lib"
     },
-    "cmake.configureArgs": [
-        "-DLOG_ON=ON -DLOG_LEVEL_DEBUG=ON -DLOG_LEVEL_VERBOSE=ON"
-    ]
+    "cmake.configureSettings": {
+        "LOG_ON": "ON",
+        "LOG_LEVEL_DEBUG": "ON",
+        "LOG_LEVEL_VERBOSE": "ON"
+    }
 }
