@@ -58,6 +58,9 @@ set(nutrition_calculator_DEPS "${nutrition_calculator_DEPS}" PARENT_SCOPE)
 if ("${DEPS}" STREQUAL "")
 	set(DEPS ${nutrition_calculator_DEPS})
 endif()
+if ("${nutrition_calculator_DEPS}" STREQUAL "")
+	set(DEPS "$ENV{build_deps}")
+endif()
 if ("${DEPS}" STREQUAL "")
 	message(SEND_ERROR "Project: ERROR: DEPS is not specified. Take the default value")
 	set(DEPS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies)
@@ -166,7 +169,7 @@ endforeach()
 
 # add_custom_command(
 #     TARGET nutrition_calculator PRE_BUILD
-#     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/../get_dependencies.sh ${CMAKE_BUILD_TYPE} "${CMAKE_CURRENT_SOURCE_DIR}/.."
+#     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/external_config.sh ${CMAKE_BUILD_TYPE} "${CMAKE_CURRENT_SOURCE_DIR}/.."
 #     VERBATIM
 # )
 
