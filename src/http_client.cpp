@@ -69,7 +69,7 @@ namespace anp
 			notify(m_error_code);
 		});
 
-		m_client->set_on_connect([=](const std::error_code& ec) {
+		m_client->set_on_connect([=, this](const std::error_code& ec) {
 			if (!ec)
 			{
 				LOG_DEBUG("Send...");

@@ -43,7 +43,7 @@ namespace anp
 			, fname.c_str(), file_data.c_str()
 		);
 		headers.add({ "Content-Length", std::to_string(body.size()) });
-		return query(host, port, "POST", q, [=](
+		return query(host, port, "POST", q, [=, this](
 			const std::vector<char>& data
 			, std::size_t sz
 			, int code

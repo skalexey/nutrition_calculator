@@ -32,8 +32,9 @@ namespace anp
 	{
 		m_target = target_path;
 		m_f_tp = utils::file::modif_time(m_target);
+		LOG_DEBUG("	Init local file modification time: " << utils::time_to_string(m_f_tp));
 
-		return query(host, port, "GET", q, [=](
+		return query(host, port, "GET", q, [=, this](
 			const std::vector<char>& data
 			, std::size_t sz
 			, int code
@@ -53,7 +54,7 @@ namespace anp
 					return false;
 				}
 
-				auto on_content_length_changed = [=] {
+				auto on_content_length_changed = [=, this] {
 					if (m_content_length <= 0)
 					{ // Download is finished
 						if (m_content_length < 0)
@@ -62,6 +63,7 @@ namespace anp
 							return false;
 						}
 						
+						// If file exists, but modification time is null
 						if (utils::file::exists(m_target) && m_f_tp == decltype(m_f_tp)())
 						{
 							notify(erc::file_error);
@@ -69,7 +71,7 @@ namespace anp
 						else
 						{
 							if (!utils::file::exists(m_target))
-							{
+							{	// Create the file
 								auto f = std::ofstream(m_target);
 								f.close();
 							}
@@ -79,8 +81,10 @@ namespace anp
 								content_differs = true;
 
 							// Check the modification time
+							LOG_DEBUG("Check the modification time");
 							if (m_f_tp < m_tp)
 							{
+								LOG_DEBUG("m_f_tp < m_tp (" << utils::time_to_string(m_f_tp) << ", " << utils::time_to_string(m_tp) << ")");
 								// Overwrite with the download
 								if (content_differs)
 								{
@@ -114,8 +118,11 @@ namespace anp
 						m_content_length = -1;
 						return false;
 					}
-					// Download is going to begin
-					return true;
+					else
+					{
+						// Download is going to begin
+						return true;
+					}
 				};
 				
 				bool is_header = false;
@@ -172,17 +179,8 @@ namespace anp
 								// date lib info:
 								// https://howardhinnant.github.io/date/date.html
 								// , %d %B %4C %H:%M:%S GMT
-#ifdef __cpp_lib_format
-								LOG_DEBUG(std::format("Parsed date: {0:%a, %d %b %Y %H:%M:%S GMT}", m_tp));
-#else
 								LOG_DEBUG("Parsed date: " << utils::time_to_string(m_tp));
-#endif
-								
-#ifdef __cpp_lib_format
-								LOG_DEBUG(std::format("Local file date: {0:%a, %d %b %Y %H:%M:%S GMT}", m_f_tp));
-#else
 								LOG_DEBUG("Local file date: " << utils::time_to_string(m_f_tp));
-#endif
 							}
 							catch (...)
 							{
@@ -201,11 +199,13 @@ namespace anp
 				}
 			
 				if (m_content_length >= 0)
-				{	// Start writing to a file
+				{
+					LOG_DEBUG("Downloaded data processing. m_content_length: " << m_content_length);
 					const std::remove_reference<decltype(data)>::type::value_type* p = nullptr;
 					std::size_t wsz = 0;
 					if (is_header)
 					{
+						LOG_DEBUG("Parse header");
 						decltype(data) term = {'\r', '\n', '\r', '\n'};
 						auto it = std::search(data.begin(), data.end(), term.begin(), term.end());
 						if (it != data.end())
@@ -213,17 +213,22 @@ namespace anp
 							auto offset = std::distance(data.begin(), it) + term.size();
 							p = data.data() + offset;
 							wsz = sz - offset;
+							LOG_DEBUG("Header size: " << offset);
+							LOG_DEBUG("Payload size: " << wsz);
+							LOG_DEBUG("Whole data block size: " << sz);
 							assert(wsz >= 0);
 						}
 					}
 					else
 					{
+						LOG_DEBUG("Process the data payload");
 						p = data.data();
 						wsz = sz;
 					}
 					
 					if (p != nullptr && wsz > 0)
 					{
+						LOG_DEBUG("Write the download to a file");
 						std::ofstream f(m_download, std::ios::app | std::ios::binary);
 						f.write(p, wsz);
 						f.close();
@@ -232,6 +237,7 @@ namespace anp
 						on_content_length_changed();
 					}
 				}
+				return true;
 			}
 		);
 	}
@@ -288,6 +294,7 @@ namespace anp
 		m_backup.clear();
 		m_download.clear();
 		m_tp = decltype(m_tp)();
+		LOG_DEBUG("Reset remote file modification time");
 		m_is_file_updated = false;
 	}
 
