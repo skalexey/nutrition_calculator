@@ -1,6 +1,6 @@
 #!/bin/bash
 
-download_dependency()
+function download_dependency()
 {
 	local folderName=${PWD##*/}
 
@@ -10,7 +10,6 @@ download_dependency()
 	local dep_dir_name=$1
 	local deps_path=${2}
 	local deps_path="${deps_path//\~/$HOME}"
-	local repo=$3
 
 	log "Resolve dependency directory '${dep_dir_name}'" " --"
 
@@ -20,7 +19,7 @@ download_dependency()
 		local retval=$?
 		if [ $retval -ne 0 ]; then
 			log_error "Directory '${deps_path}' creation error" " ---"
-			exit 1
+			return 1
 		else
 			log "Created" " ---"
 		fi
@@ -28,17 +27,17 @@ download_dependency()
 
 	if [[ ! -d "$deps_path/$dep_dir_name" ]]; then
 		log "Dependency directory '$dep_dir_name' does not exist. Download..." " ---"
-		local cur_path=$(PWD)
+		source net_utils.sh
+		local cur_path=$(pwd)
 		cd "$deps_path"
-		git clone ${repo}
-		cd "${cur_path}"
-		local retval=$?
-		if [ $retval -ne 0 ]; then
-			log_error "Directory '${dep_name}' creation error" " ---"
-			exit 1
+		download ${@:3}
+		if [ $? -ne 0 ]; then
+			log_error "Dependency '${dep_dir_name}' download error" " ---"
+			return 1
 		else
 			log_success "Completed download of dependency '$dep_dir_name'" " ---"
 		fi
+		cd "${cur_path}"
 	else
 		log "Dependency '$dep_dir_name' is already downloaded" " ---"
 	fi

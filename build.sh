@@ -101,14 +101,14 @@ build()
 		local retval=$?
 		if [ $retval -ne 0 ]; then
 			log_error "Dependencies resolution error" " --"
-			exit 1
+			return 1
 		else
 			log_success "Done with dependencies" " --"
 			cd "$enterDirectory"
 		fi
 	fi
 
-	[ ! -d "$rootDirectory" ] && log_error "Non-existent project directory passed '$rootDirectory'" " -" && exit 1
+	[ ! -d "$rootDirectory" ] && log_error "Non-existent project directory passed '$rootDirectory'" " -" && return 5
 
 	if [[ "$rootDirectory" != "." ]]; then
 		local folderName=$rootDirectory
@@ -134,12 +134,12 @@ build()
 	if [ $retval -ne 0 ]; then
 		log_error "CMake configure error" " -"
 		cd "$enterDirectory"
-		exit
+		return 2
 	else
 		log_success "CMake configuring has been successfully done" " -"
 	fi
 
-	[ "$onlyConfig" == true ] && log "Exit without build" " -" && exit || log "Run cmake --build" " -"
+	[ "$onlyConfig" == true ] && log "Exit without build" " -" && return 4 || log "Run cmake --build" " -"
 
 	log "cmake --build . --config=$buildConfig" "\033[0;36m" "\033[0m"
 	cmake --build . --config=$buildConfig
@@ -148,7 +148,7 @@ build()
 	if [ $retval -ne 0 ]; then
 		log_error "CMake build error" " -"
 		cd "$enterDirectory"
-		exit
+		return 3
 	else
 		log_success "CMake building is successfully done" "-" " ---"
 	fi
