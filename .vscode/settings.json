@@ -71,8 +71,7 @@
     },
     "cmake.useCMakePresets": "auto",
     "cmake.environment": {
-        "build_deps": "/home/alex/Projects",
-        "build_libs": "/home/alex/lib"
+        "build_deps": "${env:USERPROFILE}/Projects"
     },
     "cmake.configureSettings": {
         "LOG_ON": "ON",
