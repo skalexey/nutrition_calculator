@@ -14,7 +14,7 @@
 	function connect_to_db()
 	{
 		// define(PRINT_QUERIES, 1);
-		include 'include/db_mysql.php';
+		include '../include/db_mysql.php';
 		
 		$hostname = ini_get("mysqli.default_host");
 		$username = ini_get("mysqli.default_user");
