@@ -1,4 +1,4 @@
-﻿// http_client.h
+// http_client.h
 
 #pragma once
 

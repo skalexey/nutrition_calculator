@@ -1,4 +1,4 @@
-﻿// authenticator.h
+// authenticator.h
 
 #pragma once
 

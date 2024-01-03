@@ -1,4 +1,4 @@
-﻿// uploader.h
+// uploader.h
 
 #pragma once
 

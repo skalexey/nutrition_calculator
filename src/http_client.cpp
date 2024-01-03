@@ -1,4 +1,4 @@
-﻿// http_client.cpp
+// http_client.cpp
 
 #include <map>
 #include <string>

@@ -1,4 +1,4 @@
-﻿// item.cpp : Defines the entry point for the application.
+// item.cpp : Defines the entry point for the application.
 //
 #include <iostream>
 #include <string_view>

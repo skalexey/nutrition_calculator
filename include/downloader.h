@@ -1,4 +1,4 @@
-﻿// downloader.h
+// downloader.h
 
 #pragma once
 
