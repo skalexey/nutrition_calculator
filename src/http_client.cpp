@@ -11,7 +11,7 @@
 
 LOG_PREFIX("[http_client]: ");
 LOG_POSTFIX("\n");
-SET_LOG_DEBUG(true);
+SET_LOCAL_LOG_DEBUG(true);
 
 namespace anp
 {

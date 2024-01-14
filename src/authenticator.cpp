@@ -17,7 +17,7 @@
 
 LOG_PREFIX("[authenticator]: ");
 LOG_POSTFIX("\n");
-SET_LOG_DEBUG(true);
+SET_LOCAL_LOG_DEBUG(true);
 namespace fs = std::filesystem;
 namespace ch = std::chrono;
 
