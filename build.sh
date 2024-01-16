@@ -48,10 +48,11 @@ build()
 	for arg in "$@" 
 	do
 		echo "arg[$argIndex]: '$arg'"
-		
 		if [[ $argIndex -eq 0 ]]; then
 			local rootDirectory=$arg
 		else
+			arg=$(echo $arg | tr '[:upper:]' '[:lower:]')
+			[ $? -ne 0 ] && log_error "Error in tr command" " --" && return 1
 			if [[ "$arg" == "only-lib" ]]; then
 				log "'only-lib' option passed. Build only library without tests" " --"
 				local onlyLibArg=" only-lib"
@@ -114,7 +115,19 @@ build()
 		local folderName=$rootDirectory
 	fi
 
+	local configure_cmd="cmake ..$generatorArg$logArg$extraArg"
+	local build_cmd="cmake --build . --config=$buildConfig"
 	local build="$rootDirectory/${buildFolderPrefix}-cmake"
+
+	if [ -f "pre_build.sh" ]; then
+		./pre_build.sh $@
+		[ $? -ne 0 ] && log_error "pre_build.sh error" " -" && return 6
+	fi
+
+	if [ -f "$rootDirectory/pre_build.sh" ]; then
+		source $rootDirectory/pre_build.sh $@
+		[ $? -ne 0 ] && log_error "$rootDirectory/pre_build.sh error" " -" && return 7
+	fi
 
 	log "Output directory: '$build'" " -"
 
@@ -126,9 +139,8 @@ build()
 		log "Remove CMakeCache.txt cmd: '$cmd'"
 		$cmd
 	fi
-	cmd="cmake ..$generatorArg$logArg$extraArg"
-	log "Configure with CMake command: '$cmd'" "\033[0;36m" "\033[0m"
-	$cmd
+	log "Configure with CMake command: '$configure_cmd'" "\033[0;36m" "\033[0m"
+	$configure_cmd
 
 	local retval=$?
 	if [ $retval -ne 0 ]; then
@@ -141,8 +153,8 @@ build()
 
 	[ "$onlyConfig" == true ] && log "Exit without build" " -" && return 4 || log "Run cmake --build" " -"
 
-	log "cmake --build . --config=$buildConfig" "\033[0;36m" "\033[0m"
-	cmake --build . --config=$buildConfig
+	log "$build_cmd" "\033[0;36m" "\033[0m"
+	$build_cmd
 
 	local retval=$?
 	if [ $retval -ne 0 ]; then
