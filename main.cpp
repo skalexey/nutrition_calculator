@@ -20,7 +20,7 @@
 #include <utils/file_utils.h>
 #include <utils/datetime.h>
 #include <utils/string_utils.h>
-#include <utils/Log.h>
+#include <utils/log.h>
 #include "downloader.h"
 #include "uploader.h"
 #include "item.h"

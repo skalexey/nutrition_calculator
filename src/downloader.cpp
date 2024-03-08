@@ -8,7 +8,7 @@
 #endif
 #include <fstream>
 #include <tcp/client.h>
-#include <utils/Log.h>
+#include <utils/log.h>
 #include <utils/string_utils.h>
 #include <utils/file_utils.h>
 #include <utils/datetime.h>
