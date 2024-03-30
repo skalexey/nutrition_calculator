@@ -16,8 +16,8 @@
 namespace
 {
 	// Data
-	const std::string item_info_fname = std::filesystem::temp_directory_path().append("item_info.txt").string();
-	const std::string input_fname = std::filesystem::temp_directory_path().append("input.txt").string();
+	const std::string item_info_fname = std::filesystem::temp_directory_path().append("nc_item_info.txt").string();
+	const std::string input_fname = std::filesystem::temp_directory_path().append("nc_input.txt").string();
 	std::ifstream fi_item_info;
 	std::ofstream fo_item_info;
 
@@ -128,7 +128,7 @@ bool item_info::enter_title(std::string& to, std::istream& is)
 		//if (trial > 0)
 		//	std::cout << "\tInvalid name '" << to << "'. Enter again (or type 'exit' to finish): ";
 		utils::input::input_line(to, is, input_fname);
-		if (!utils::input::last_getline_valid)
+		if (!utils::input::last_getline_valid())
 			return false;
 		//auto it = std::remove_if(to.begin(), to.end(), isspace);
 		//if (it != to.end())

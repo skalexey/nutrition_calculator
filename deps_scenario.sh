@@ -11,7 +11,7 @@ function deps_scenario()
     download_dependency "DataModelBuilder" "$depsLocation" "git@github.com:skalexey/DataModelBuilder.git"
     source "$depsLocation/DataModelBuilder/Core/deps_scenario.sh"
     source "$depsLocation/Networking/netlib/external_config.sh"
-    download_dependency "php_include" "$depsLocation" "git@github.com:skalexey/php_include.git"
+    download_dependency "php_utils" "$depsLocation" "git@github.com:skalexey/php_utils.git"
 }
 
 deps_scenario $@

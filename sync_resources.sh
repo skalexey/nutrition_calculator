@@ -71,10 +71,10 @@ function sync_resources()
 	#$automation_dir/git/pull.sh "$tmp_dir"
 
 	local commit=false
-	if sync_file "item_info.txt" "$tmp_dir"; then
+	if sync_file "nc_item_info.txt" "$tmp_dir"; then
 		commit=true
 	fi
-	if sync_file "input.txt" "$tmp_dir"; then
+	if sync_file "nc_input.txt" "$tmp_dir"; then
 		commit=true
 	fi
 	if $commit; then

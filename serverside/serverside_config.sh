@@ -1,7 +1,9 @@
 #!/usr/bin/bash
 
-domain_dir="domains/host.com"
+domain_dir=""
 project_dir_name="nc"
-ssh_host="host.com"
-ssh_user="user"
-ssh_pass="pass"
+users_dir_name="nc_u"
+ssh_host=""
+ssh_port=
+ssh_user=""
+ssh_pass=""
