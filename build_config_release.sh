@@ -3,7 +3,7 @@
 source external_config.sh
 
 buildFolderPrefix="Build"
-extraArg=" -"
+extraArg=" "
 extraArgWin=$extraArg
 extraArgMac=$extraArg
 logArg=" -DLOG_ON=ON"
