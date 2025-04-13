@@ -5,6 +5,7 @@ macro(setup_deps)
 
 	if("${DEPS}" STREQUAL "")
 		set(DEPS ${${MODULE_NAME}_deps})
+		module_message("Deps from ${MODULE_NAME}_deps: ${DEPS}.")
 	endif()
 
 	if("${DEPS}" STREQUAL "")
