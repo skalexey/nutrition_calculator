@@ -351,7 +351,7 @@ vl::Object* get_cfg_data()
 				LOG_ERROR("Can't create config file");
 				return nullptr;
 			}
-	return &cfg_model_ptr->GetContent().GetData();
+	return &cfg_model_ptr->Content().Data();
 }
 
 bool check_config()
