@@ -14,8 +14,7 @@ if (-not (Test-Admin)) {
 
 $executable_name = $args[0]
 $build_dir = $args[1]
-$app_folder = $args[2]
-$deploy_dir = $Env:PROGRAMFILES + "\" + $app_folder
+$deploy_dir = $args[2]
 $build_type = $args[3]
 $app_folder = if ($args.Length -gt 4) { $args[4] } else { "" }
 
