@@ -1,5 +1,6 @@
 // item.cpp : Defines the entry point for the application.
 //
+#include <cassert>
 #include <iostream>
 #include <string_view>
 #include <algorithm>
@@ -15,6 +16,7 @@
 
 namespace
 {
+	const auto nutrition_input_size = 5;
 	// Data
 	const std::string item_info_fname = std::filesystem::temp_directory_path().append("nc_item_info.txt").string();
 	const std::string input_fname = std::filesystem::temp_directory_path().append("nc_input.txt").string();
@@ -37,12 +39,46 @@ namespace
 
 	bool parse_nutrition(const std::string& data, std::vector<float>& nutrition)
 	{
+		assert(nutrition.empty());
 		constexpr std::string_view delim("/");
 		auto v = utils::split(data, "/");
 		try
 		{
-			for (auto&& sub : v)
-				nutrition.push_back(std::stof(std::string(sub)));
+			// Iterate over the parts and convert them to float except the last one
+			auto size = v.size();
+			if (size > nutrition_input_size)
+			{
+				std::cerr << "Error: Too many nutrition values provided. Expected at most 5 values.\n";
+				assert(false);
+				return false;
+			}
+			nutrition.reserve(v.size() - 1);
+			// Take the weight and convert it to a factor for aligning the nutrition values to 100 grams
+			auto weight = 100.f;
+			auto it_size = v.end();
+			if (size == nutrition_input_size) // Weight is specified.
+			{
+				it_size = std::next(v.begin(), size - 1);
+				weight = std::stof(std::string(*it_size));
+				if (weight <= 0)
+				{
+					std::cerr << "Error: Invalid weight value provided: " << weight << ". Weight must be greater than 0.\n";
+					assert(false);
+					return false;
+				}
+			}
+			auto factor = 100.f / weight;
+			for (auto it = v.begin(); it != it_size; ++it)
+			{
+				float value = std::stof(std::string(*it));
+				if (value < 0)
+				{
+					std::cerr << "Error: Negative nutrition value provided: " << value << ". Nutrition values must be non-negative.\n";
+					assert(false);
+					return false;
+				}
+				nutrition.push_back(value * factor);
+			}
 		}
 		catch (const std::invalid_argument& e)
 		{
@@ -62,6 +98,19 @@ namespace
 			return false;
 		}
 		return true;
+	}
+
+	void offer_calories_replacement(float from, float& to)
+	{
+		if (from != to)
+		{
+			assert(from >= 0);
+			std::cout << "Calories calculated from nutrition: " << from << ". Do you want to replace the stored value of " << to << "? (y/n): ";
+			char answer;
+			std::cin >> answer;
+			if (answer == 'y' || answer == 'Y')
+				to = from;
+		}
 	}
 }
 
@@ -177,12 +226,20 @@ item_info_ptr item_info::load(const std::string& item_title)
 				}
 				case 1:	// Nutrition
 					if (ret)
-						parse_nutrition(std::string(p), ret->nutrition);
+						if (!parse_nutrition(std::string(p), ret->nutrition))
+						{
+							std::cin >> *ret;
+							break;
+						}
 					break;
 
 				case 2: // Callories
 					if (ret)
+					{
 						parse_calories(std::string(p), ret->cal);
+						auto kcal = ret->calc_calories();
+						offer_calories_replacement(kcal, ret->cal);
+					}
 					break;
 			}
 			i++;
@@ -191,6 +248,11 @@ item_info_ptr item_info::load(const std::string& item_title)
 			break;
 	}
 	return ret;
+}
+
+float item_info::calc_calories() const
+{
+	return nutrition[0] * 4 + nutrition[1] * 9 + nutrition[2] * 4;
 }
 
 // Operator >>
@@ -219,27 +281,27 @@ std::istream& operator >> (std::istream& is, item_info& obj)
 bool item_info::enter_nutrition(std::istream& is)
 {
 	int trial = 0;
-	std::string pfcfib;
-	while (nutrition.size() != 4)
+	std::string pfcfibw;
+	while (nutrition.size() != nutrition_input_size)
 	{
 		nutrition.clear();
-		pfcfib.clear();
+		pfcfibw.clear();
 		if (trial == 0)
-			std::cout << "\t" << "p/f/c/fib per 100g: ";
+			std::cout << "\t" << "p/f/c/fib/w: ";
 		else
-			std::cout << "\t" << "Wrong format\np/f/c/fib: ";
+			std::cout << "\t" << "Wrong format\np/f/c/fib/w: ";
 		do {
-			if (!utils::input::input_line(pfcfib, is))
+			if (!utils::input::input_line(pfcfibw, is))
 				return false;
-			auto it = std::remove_if(pfcfib.begin(), pfcfib.end(), isspace);
-			if (it != pfcfib.end())
-				pfcfib.erase(it, pfcfib.end());
-		} while (pfcfib.empty());
-		
-		parse_nutrition(pfcfib, nutrition);
+			auto it = std::remove_if(pfcfibw.begin(), pfcfibw.end(), isspace);
+			if (it != pfcfibw.end())
+				pfcfibw.erase(it, pfcfibw.end());
+		} while (pfcfibw.empty());
+
+		parse_nutrition(pfcfibw, nutrition);
 		trial++;
 	}
-	fo_item_info << pfcfib;
+	fo_item_info << pfcfibw;
 	fo_item_info.flush();
 	return true;
 }
