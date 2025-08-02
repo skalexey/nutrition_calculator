@@ -32,28 +32,28 @@ if (-not (Test-Path -Path $deploy_dir -PathType Container)) {
 
 # Check if the source directory exists
 if (Test-Path -Path $build_dir -PathType Container) {
-	# Deploy Qt DLLs
-	$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
-	$batFilePath = Join-Path $scriptDirectory "deploy.bat"
-	$processStartInfo = @{
-		FilePath = $batFilePath
-		NoNewWindow = $true
-		Wait = $true
-	}
-	if ($args) {
-		$processStartInfo['ArgumentList'] = $args
-	}
-	Start-Process @processStartInfo
-	# Run windeployqt.exe to copy the required Qt DLLs
-	# $THIS_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
-	# $appLocation = Join-Path $build_dir ($executable_name + ".exe")
-	# $Env:QT_DIR\\msvc2019_64\\bin\\windeployqt.exe $appLocation --qmldir $THIS_DIR
-	if ($?) {
-		Write-Host "Qt DLLs copied from '$build_dir' to '$deploy_dir'"
-	} else {
-		Write-Host "Error: Copying Qt DLLs from '$build_dir' to '$deploy_dir' failed. See the log above ^^" -ForegroundColor Red
-		exit 1
-	}
+	# # Deploy Qt DLLs
+	# $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
+	# $batFilePath = Join-Path $scriptDirectory "deploy.bat"
+	# $processStartInfo = @{
+	# 	FilePath = $batFilePath
+	# 	NoNewWindow = $true
+	# 	Wait = $true
+	# }
+	# if ($args) {
+	# 	$processStartInfo['ArgumentList'] = $args
+	# }
+	# Start-Process @processStartInfo
+	# # Run windeployqt.exe to copy the required Qt DLLs
+	# # $THIS_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
+	# # $appLocation = Join-Path $build_dir ($executable_name + ".exe")
+	# # $Env:QT_DIR\\msvc2019_64\\bin\\windeployqt.exe $appLocation --qmldir $THIS_DIR
+	# if ($?) {
+	# 	Write-Host "Qt DLLs copied from '$build_dir' to '$deploy_dir'"
+	# } else {
+	# 	Write-Host "Error: Copying Qt DLLs from '$build_dir' to '$deploy_dir' failed. See the log above ^^" -ForegroundColor Red
+	# 	exit 1
+	# }
 	# Copy files from the source directory to the newly created directory
 	Copy-Item -Path $build_dir\* -Destination $deploy_dir -Recurse -Force
 	if ($?) {
