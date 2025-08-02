@@ -47,6 +47,7 @@ struct item_info
 
     bool enter_nutrition(std::istream& is);
     bool enter_cal(std::istream& is);
+    float calc_calories() const;
 
     // Static public interface
     static bool enter_title(std::string& to, std::istream& is);

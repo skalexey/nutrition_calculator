@@ -26,6 +26,7 @@
 #include <utils/extern/user_input.h>
 #include <utils/log.h>
 #include "item.h"
+#include "item_info_manager.h"
 #include <DMBCore.h>
 
 LOG_TITLE("main");
@@ -201,6 +202,21 @@ int job()
 			}
 			else
 				MSG("Item '" << what << "' not found");
+		}
+		return true;
+	});
+	utils::input::register_command("edit_info", [&] {
+		auto v = utils::input::last_getline_value();
+		auto p = v.find(" ");
+		if (p == std::string::npos)
+			return true;
+		auto what = v.substr(p + 1);
+		if (!what.empty())
+		{
+			if (item_info_manager::get_instance().edit_item(what))
+				MSG("Item info edit completed");
+			else
+				MSG("Item info edit failed");
 		}
 		return true;
 	});
@@ -410,6 +426,11 @@ int main()
 		return 0;
 	}
 
+	// Initialize the item info manager
+	std::cout << "Loading item database...\n";
+	item_info_manager::initialize();
+	std::cout << "Item database loaded.\n";
+
 	if (!get_identity())
 	{
 		MSG("No login information has been provided. Exit.");
@@ -440,6 +461,9 @@ int main()
 			return ret;
 
 	job();
+
+	// Cleanup the item info manager
+	item_info_manager::shutdown();
 
 	// Let it leave longer
 	// TODO: think how to shorten its lifetime
