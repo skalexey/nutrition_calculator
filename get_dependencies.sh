@@ -3,7 +3,7 @@
 process_dependences()
 {
 	[ -z $1 ] && log_error "No directory provided" && return 1
-	[ ! -d $1 ] && log_error "Non-existent directory provided" && return 2 || local dir=$1
+	[ ! -d $1 ] && log_error "Non-existent directory provided: '$1'" && return 2 || local dir=$1
 
 	log_info "Check for dependencies in '$dir'" " -"
 	# local enterDirectory=${PWD}
