@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <cassert>
 
@@ -420,10 +421,10 @@ std::string item_info_manager::serialize_item(const item_info& info)
     for (size_t i = 0; i < info.nutrition.size(); ++i)
     {
         if (i > 0) oss << "/";
-        oss << info.nutrition[i];
+        oss << std::fixed << std::setprecision(1) << info.nutrition[i];
     }
     
-    oss << "\t" << info.cal;
+    oss << "\t" << std::fixed << std::setprecision(1) << info.cal;
     
     return oss.str();
 }

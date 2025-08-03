@@ -135,21 +135,8 @@ void store_item(const item& item)
 
 bool enter_item(item& to)
 {
-	// Title
-	if (to.title.empty())
-	{
-		std::string title;
-		if (!item_info::enter_title(title, std::cin))
-			return false;
-		to.title = title;
-	}
-
-	if (auto info = item_info::load(to.title))
-	{
-		to.set_info(info);
-		std::cout << "Item info '" << to.title << "' found: ";
-		to.info().print_nutrition(100.f);
-	}
+	// Read the entire item from input stream (file or stdin)
+	// The operator >> will handle reading title from file and weight interactively
 	std::cin >> to;
 	if (!utils::input::last_getline_valid())
 		return false;

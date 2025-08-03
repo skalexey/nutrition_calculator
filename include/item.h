@@ -26,6 +26,7 @@ struct item_info
 	std::vector<float> nutrition;
 	aliases_list_t aliases;
     float cal = 0;
+    float reference_weight = 100.0f; // Weight used when entering nutrition values
 
     // Initializers
     item_info() = default;

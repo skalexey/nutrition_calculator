@@ -10,6 +10,7 @@
 #include <exception>
 #include <cstdlib>
 #include <filesystem>
+#include <limits>
 #include <utils/io_utils.h>
 #include <utils/string_utils.h>
 #include "item.h"
@@ -49,6 +50,9 @@ std::istream& operator >> (std::istream& is, item& obj)
 				{
 					obj.set_info(std::make_shared<item_info>(obj.title));
 					is >> obj.info();
+					// Clear any remaining input after creating item_info
+					is.clear();
+					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 				}
 				else
 					return is;
@@ -60,7 +64,7 @@ std::istream& operator >> (std::istream& is, item& obj)
 			}
 		}
 
-	// Weight
+	// Weight - read from input stream (file) or interactively
 	std::cout << "\t" << "grams: ";
 	while (!utils::input::input_t(obj.weight, is, input_fname));
 	
@@ -79,8 +83,8 @@ void item_info::print_nutrition(float weight)
 	int i = 0;
 	for (auto&& n : nutrition)
 		std::cout << nutrition_title(i++) << ": "
-		 << n * weight / 100.f << "\t";
-	std::cout << "Cal: " << cal * weight / 100.f;
+		 << std::fixed << std::setprecision(1) << n * weight / 100.f << "\t";
+	std::cout << "Cal: " << std::fixed << std::setprecision(1) << cal * weight / 100.f;
 	std::cout << "\n";
 }
 
@@ -127,15 +131,30 @@ std::istream& operator >> (std::istream& is, item_info& obj)
 	obj.enter_cal(is);
 	
 	// Check if calories need updating
-	auto kcal = obj.calc_calories();
-	if (std::abs(kcal - obj.cal) > 5.0f) // Only ask if difference is significant
+	// Calculate calories from the NON-normalized nutrition values (for the reference weight)
+	float non_normalized_nutrition[4];
+	for (int i = 0; i < 4; i++) {
+		non_normalized_nutrition[i] = obj.nutrition[i] * (obj.reference_weight / 100.0f);
+	}
+	float calculated_cal_for_reference = non_normalized_nutrition[0] * 4 + non_normalized_nutrition[1] * 9 + non_normalized_nutrition[2] * 4;
+	
+	if (std::abs(calculated_cal_for_reference - obj.cal) > 5.0f) // Compare non-normalized values
 	{
-		std::cout << "Calories calculated from nutrition: " << kcal 
+		std::cout << "Calories calculated from nutrition: " << std::fixed << std::setprecision(1) << calculated_cal_for_reference 
 				  << ". Do you want to replace the entered value of " << obj.cal << "? (y/n): ";
 		char answer;
 		std::cin >> answer;
-		if (answer == 'y' || answer == 'Y')
-			obj.cal = kcal;
+		if (answer == 'y' || answer == 'Y') {
+			// Store the calculated value, but normalize it to 100g
+			obj.cal = calculated_cal_for_reference * (100.0f / obj.reference_weight);
+		} else {
+			// Store the entered value, but normalize it to 100g  
+			obj.cal = obj.cal * (100.0f / obj.reference_weight);
+		}
+	}
+	else {
+		// If no significant difference, normalize the entered calories to 100g
+		obj.cal = obj.cal * (100.0f / obj.reference_weight);
 	}
 
 	// Add to manager
@@ -148,26 +167,28 @@ std::istream& operator >> (std::istream& is, item_info& obj)
 bool item_info::enter_nutrition(std::istream& is)
 {
 	int trial = 0;
-	std::string pfcfibw;
+	std::string pfcf;
+	float reference_weight = 0;
+	
 	while (nutrition.size() != 4)  // Changed from nutrition_input_size to 4
 	{
 		nutrition.clear();
-		pfcfibw.clear();
+		pfcf.clear();
 		if (trial == 0)
-			std::cout << "\t" << "p/f/c/fib/w: ";
+			std::cout << "\t" << "p/f/c/fib: ";
 		else
-			std::cout << "\t" << "Wrong format\np/f/c/fib/w: ";
+			std::cout << "\t" << "Wrong format\np/f/c/fib: ";
 		do {
-			if (!utils::input::input_line(pfcfibw, is))
+			if (!utils::input::input_line(pfcf, is))
 				return false;
-			auto it = std::remove_if(pfcfibw.begin(), pfcfibw.end(), isspace);
-			if (it != pfcfibw.end())
-				pfcfibw.erase(it, pfcfibw.end());
-		} while (pfcfibw.empty());
+			auto it = std::remove_if(pfcf.begin(), pfcf.end(), isspace);
+			if (it != pfcf.end())
+				pfcf.erase(it, pfcf.end());
+		} while (pfcf.empty());
 
 		// Parse nutrition inline (simplified version)
 		try {
-			auto v = utils::split(pfcfibw, "/");
+			auto v = utils::split(pfcf, "/");
 			if (v.size() >= 4) {
 				nutrition.clear();
 				for (size_t i = 0; i < 4 && i < v.size(); ++i) {
@@ -180,6 +201,28 @@ bool item_info::enter_nutrition(std::istream& is)
 		
 		trial++;
 	}
+	
+	// Ask for reference weight to normalize values to 100g
+	std::cout << "\t" << "Reference weight (grams) for these nutrition values: ";
+	while (!utils::input::input_t(reference_weight, is) || reference_weight <= 0) {
+		std::cout << "\t" << "Please enter a positive weight: ";
+	}
+	
+	// Store reference weight for calorie normalization
+	this->reference_weight = reference_weight;
+	
+	// Normalize nutrition values to 100g
+	if (reference_weight != 100.0f) {
+		float factor = 100.0f / reference_weight;
+		for (auto& value : nutrition) {
+			value *= factor;
+		}
+		std::cout << "\t" << "Normalized values to 100g: " 
+				  << std::fixed << std::setprecision(1)
+				  << nutrition[0] << "/" << nutrition[1] << "/" 
+				  << nutrition[2] << "/" << nutrition[3] << std::endl;
+	}
+	
 	return true;
 }
 
