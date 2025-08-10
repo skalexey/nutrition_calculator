@@ -421,10 +421,21 @@ std::string item_info_manager::serialize_item(const item_info& info)
     for (size_t i = 0; i < info.nutrition.size(); ++i)
     {
         if (i > 0) oss << "/";
-        oss << std::fixed << std::setprecision(1) << info.nutrition[i];
+        float val = info.nutrition[i];
+        if (val == static_cast<int>(val)) {
+            oss << static_cast<int>(val);  // Whole number
+        } else {
+            oss << std::fixed << std::setprecision(1) << val;  // With decimal
+        }
     }
     
-    oss << "\t" << std::fixed << std::setprecision(1) << info.cal;
+    // Write calories
+    float cal_val = info.cal;
+    if (cal_val == static_cast<int>(cal_val)) {
+        oss << "\t" << static_cast<int>(cal_val);  // Whole number
+    } else {
+        oss << "\t" << std::fixed << std::setprecision(1) << cal_val;  // With decimal
+    }
     
     return oss.str();
 }
