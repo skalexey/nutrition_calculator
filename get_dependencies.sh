@@ -2,9 +2,12 @@
 
 process_dependences()
 {
-	[ -z $1 ] && log_error "No directory provided" && return 1
-	[ ! -d $1 ] && log_error "Non-existent directory provided: '$1'" && return 2 || local dir=$1
-
+	if [ -z "$1" ]; then
+		[ ! -d "$1" ] && log_error "Non-existent directory provided: '$1'" && return 2
+	else
+		local dir=$(full_path .)
+	fi
+	
 	log_info "Check for dependencies in '$dir'" " -"
 	# local enterDirectory=${PWD}
 	# cd $dir
@@ -30,7 +33,7 @@ get_dependencies()
 	local log_prefix="-- [${PWD##*/} ${BASH_SOURCE[0]}]: "
 	
 	source file_utils.sh
-	if [ "$(full_path .)" != "$(full_path "$1")" ]; then
+	if [ -z "$1" ] && "$(full_path .)" != "$(full_path "$1")" ]; then
 		log_info "Go to the directory passed: '$1'"
 		process_dependences $1
 	else
